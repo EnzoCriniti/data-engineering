@@ -1,0 +1,36 @@
+services:
+  db:
+    image: postgres:16
+    container_name: p02-db-unico
+    ports:
+      - "${DB_PORT:-5434}:5432"
+    environment:
+      POSTGRES_DB: ${DB_NAME:-nuvemstore}
+      POSTGRES_USER: ${DB_USER:-app}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-app}
+    volumes:
+      - db-data:/var/lib/postgresql/data
+      - ../00-modelagem-transacional/ddl/schema.sql:/docker-entrypoint-initdb.d/01-oltp.sql:ro
+      - ./ddl/analytics.sql:/docker-entrypoint-initdb.d/02-analytics.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-app} -d ${DB_NAME:-nuvemstore}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  seeder:
+    build:
+      context: ../00-modelagem-transacional/seed
+    container_name: p02-seeder
+    profiles: ["jobs"]
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://${DB_USER:-app}:${DB_PASSWORD:-app}@db:5432/${DB_NAME:-nuvemstore}
+      SEED_CUSTOMERS: ${SEED_CUSTOMERS:-250}
+      SEED_ORDERS: ${SEED_ORDERS:-1200}
+      SEED_RESET: ${SEED_RESET:-true}
+
+volumes:
+  db-data:

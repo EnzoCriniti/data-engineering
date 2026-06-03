@@ -1,0 +1,111 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint-yaml:
+    name: Lint YAML (composes + workflows)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Instalar yamllint
+        run: pip install yamllint
+      - name: Rodar yamllint
+        run: yamllint -d relaxed .
+
+  validate-compose:
+    name: Validar docker-compose de cada capítulo
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: docker compose config (sintaxe + env)
+        run: |
+          set -e
+          for f in */docker-compose.yml; do
+            dir=$(dirname "$f")
+            echo "== $dir =="
+            if [ -f "$dir/.env.example" ]; then cp "$dir/.env.example" "$dir/.env"; fi
+            (cd "$dir" && docker compose config -q)
+          done
+
+  python-syntax:
+    name: Sintaxe Python (geradores, jobs, diagramas)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: py_compile em todos os .py
+        run: |
+          find . -name '*.py' -print0 | xargs -0 -I{} python -m py_compile "{}"
+
+  dbt-parse:
+    name: Validar projetos dbt (parse)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Instalar dbt
+        run: pip install dbt-postgres dbt-duckdb
+      - name: dbt parse onde houver dbt_project.yml
+        run: |
+          found=0
+          for proj in $(find . -name 'dbt_project.yml' -exec dirname {} \;); do
+            found=1
+            echo "== parse: $proj =="
+            (cd "$proj" && dbt parse) || exit 1
+          done
+          if [ "$found" = "0" ]; then echo "Nenhum projeto dbt ainda — ok (esqueleto)."; fi
+
+  json-lint:
+    name: Validar JSON (conectores)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Checar sintaxe de todos os .json
+        run: |
+          find . -name '*.json' -print0 | while IFS= read -r -d '' f; do
+            echo "== $f =="; python3 -m json.tool "$f" > /dev/null
+          done
+
+  render-diagrams:
+    name: Renderizar diagramas (PNG) e commitar
+    runs-on: ubuntu-latest
+    # Só commita os PNGs em push na main (não em PR)
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Instalar Graphviz + diagrams
+        run: |
+          sudo apt-get update && sudo apt-get install -y graphviz
+          pip install diagrams
+      - name: Gerar architecture.png de cada capítulo
+        run: |
+          for d in */diagrams; do
+            [ -f "$d/architecture.py" ] || continue
+            echo "== render: $d =="
+            (cd "$d" && python architecture.py)
+          done
+      - name: Commitar PNGs se houver mudança
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add */diagrams/*.png || true
+          if ! git diff --cached --quiet; then
+            git commit -m "ci: regenerar diagramas de arquitetura [skip ci]"
+            git push
+          else
+            echo "Nenhuma mudança nos diagramas."
+          fi

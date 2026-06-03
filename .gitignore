@@ -1,0 +1,34 @@
+# Env
+.env
+*.env
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Data / artefatos locais
+data/
+*.duckdb
+*.parquet
+*.csv
+!**/seeds/*.csv
+
+# dbt
+target/
+dbt_packages/
+logs/
+
+# Spark / lake local
+spark-warehouse/
+minio-data/
+
+# IDE / OS
+.idea/
+.vscode/
+.DS_Store
+
+# Diagramas: versionar os PNGs gerados (NÃO ignorar)
+!**/diagrams/*.png

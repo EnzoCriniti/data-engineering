@@ -1,0 +1,68 @@
+services:
+  oltp:
+    image: postgres:16
+    container_name: p03-oltp
+    ports:
+      - "${OLTP_PORT:-5435}:5432"
+    environment:
+      POSTGRES_DB: ${OLTP_DB:-nuvemstore}
+      POSTGRES_USER: ${OLTP_USER:-app}
+      POSTGRES_PASSWORD: ${OLTP_PASSWORD:-app}
+    volumes:
+      - oltp-data:/var/lib/postgresql/data
+      - ../00-modelagem-transacional/ddl/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${OLTP_USER:-app} -d ${OLTP_DB:-nuvemstore}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  warehouse:
+    image: postgres:16
+    container_name: p03-warehouse
+    ports:
+      - "${WAREHOUSE_PORT:-5436}:5432"
+    environment:
+      POSTGRES_DB: ${WAREHOUSE_DB:-warehouse}
+      POSTGRES_USER: ${WAREHOUSE_USER:-analytics}
+      POSTGRES_PASSWORD: ${WAREHOUSE_PASSWORD:-analytics}
+    volumes:
+      - warehouse-data:/var/lib/postgresql/data
+      - ./warehouse/schema.sql:/docker-entrypoint-initdb.d/01-warehouse.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${WAREHOUSE_USER:-analytics} -d ${WAREHOUSE_DB:-warehouse}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  seeder:
+    build:
+      context: ../00-modelagem-transacional/seed
+    container_name: p03-seeder
+    profiles: ["jobs"]
+    depends_on:
+      oltp:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://${OLTP_USER:-app}:${OLTP_PASSWORD:-app}@oltp:5432/${OLTP_DB:-nuvemstore}
+      SEED_CUSTOMERS: ${SEED_CUSTOMERS:-250}
+      SEED_ORDERS: ${SEED_ORDERS:-1200}
+      SEED_RESET: ${SEED_RESET:-true}
+
+  migrate:
+    build:
+      context: ./warehouse
+    container_name: p03-migrate
+    profiles: ["jobs"]
+    depends_on:
+      oltp:
+        condition: service_healthy
+      warehouse:
+        condition: service_healthy
+    environment:
+      OLTP_URL: postgresql://${OLTP_USER:-app}:${OLTP_PASSWORD:-app}@oltp:5432/${OLTP_DB:-nuvemstore}
+      WAREHOUSE_URL: postgresql://${WAREHOUSE_USER:-analytics}:${WAREHOUSE_PASSWORD:-analytics}@warehouse:5432/${WAREHOUSE_DB:-warehouse}
+
+volumes:
+  oltp-data:
+  warehouse-data:
