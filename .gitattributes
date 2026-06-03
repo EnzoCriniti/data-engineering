@@ -1,0 +1,9 @@
+# Normaliza fins de linha para LF, evitando corrupcao de scripts em editores Windows.
+* text=auto eol=lf
+
+# Binarios nao devem ser normalizados.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.pdf binary

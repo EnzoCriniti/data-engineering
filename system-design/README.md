@@ -1,8 +1,8 @@
 # System Design - NuvemStore
 
-Esta pasta descreve a arquitetura macro da NuvemStore, a empresa ficticia usada em todos os capitulos do repositorio.
+Esta pasta descreve a arquitetura macro da NuvemStore, a empresa ficticia usada em todos os capítulos do repositorio.
 
-Os capitulos `00` a `13` mostram a evolucao pratica da plataforma de dados. O `system-design` mostra a visao consolidada da empresa: aplicacao, dominios de negocio, plataforma de dados, seguranca, redes, observabilidade e evolucao temporal.
+Os capítulos `00` a `13` mostram a evolucao pratica da plataforma de dados. O `system-design` mostra a visao consolidada da empresa: aplicação, domínios de negócio, plataforma de dados, seguranca, redes, observabilidade e evolucao temporal.
 
 ## Como ler
 
@@ -14,13 +14,13 @@ Os capitulos `00` a `13` mostram a evolucao pratica da plataforma de dados. O `s
 
 ## Ideia central
 
-A arquitetura nao nasce pronta. Ela evolui:
+A arquitetura não nasce pronta. Ela evolui:
 
-1. aplicacao e OLTP;
+1. aplicação e OLTP;
 2. analytics no mesmo banco;
 3. warehouse dedicado;
 4. pipelines batch;
-5. multiplas fontes;
+5. múltiplas fontes;
 6. orquestracao;
 7. lake on-prem;
 8. migracao para object storage;

@@ -1,23 +1,23 @@
-# Gabarito de estado - Capitulo 08
+# Gabarito de estado - Capítulo 08
 
-## Objetivo do capitulo
+## Objetivo do capítulo
 
 Introduzir data lake para dados volumosos e semi-estruturados, usando HDFS on-prem e Spark.
 
 ## Estado inicial
 
-O capitulo deve recriar o estado final do capitulo 07:
+O capítulo deve recriar o estado final do capítulo 07:
 
 - pipeline orquestrado;
-- dados analiticos existentes;
+- dados analíticos existentes;
 - warehouse ainda usado para marts;
-- necessidade de armazenar historico/eventos fora do warehouse.
+- necessidade de armazenar histórico/eventos fora do warehouse.
 
-## Etapas do capitulo
+## Etapas do capítulo
 
 1. Subir HDFS como zona raw do lake.
 2. Subir Spark master e worker.
-3. Subir metastore/catalogo para registrar datasets.
+3. Subir metastore/catálogo para registrar datasets.
 4. Gerar ou reaproveitar eventos semi-estruturados.
 5. Carregar dados crus no HDFS.
 6. Processar dados com Spark.
@@ -35,15 +35,15 @@ Ao final, deve existir:
 - jobs Spark versionados;
 - warehouse ainda preservado para marts existentes.
 
-## Validacoes
+## Validações
 
 - Arquivos crus existem no HDFS.
 - Spark le os dados crus sem erro.
-- Saida Parquet e gerada.
+- Saída Parquet e gerada.
 - Dataset curado aparece no metastore.
 - Contagens do curado batem com a entrada esperada.
-- O warehouse nao precisa carregar todo o historico semi-estruturado.
+- O warehouse não precisa carregar todo o histórico semi-estruturado.
 
-## Como o proximo capitulo usa este estado
+## Como o proximo capítulo usa este estado
 
-O capitulo 09 usa o lake HDFS como legado inicial e simula a migracao gradual para S3/MinIO.
+O capítulo 09 usa o lake HDFS como legado inicial e simula a migracao gradual para S3/MinIO.

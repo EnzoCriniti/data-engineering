@@ -1,19 +1,19 @@
-# Gabarito de estado - Capitulo 06
+# Gabarito de estado - Capítulo 06
 
-## Objetivo do capitulo
+## Objetivo do capítulo
 
 Adicionar uma fonte externa batch, simulando uma transportadora, e carregar seus dados em staging no warehouse.
 
 ## Estado inicial
 
-O capitulo deve recriar o estado final do capitulo 05:
+O capítulo deve recriar o estado final do capítulo 05:
 
-- origem interna ja modelada;
+- origem interna já modelada;
 - pipeline e transformacoes internas existentes;
-- marts internos disponiveis;
+- marts internos disponíveis;
 - necessidade de enriquecer analytics com uma fonte externa.
 
-## Etapas do capitulo
+## Etapas do capítulo
 
 1. Subir API fake da transportadora.
 2. Subir warehouse/staging.
@@ -21,7 +21,7 @@ O capitulo deve recriar o estado final do capitulo 05:
 4. Implementar extractor batch.
 5. Carregar `staging.transportadora_entregas`.
 6. Controlar incremental por `atualizado_em`.
-7. Garantir idempotencia por `entrega_id`.
+7. Garantir idempotência por `entrega_id`.
 
 ## Estado final esperado
 
@@ -33,14 +33,14 @@ Ao final, deve existir:
 - checkpoint incremental;
 - dados prontos para cruzar com pedidos internos.
 
-## Validacoes
+## Validações
 
 - API responde com payload JSON.
 - Carga popula `staging.transportadora_entregas`.
-- Rodar a carga duas vezes nao duplica entregas.
+- Rodar a carga duas vezes não duplica entregas.
 - Registros novos por `atualizado_em` entram corretamente.
 - `pedido_id` externo pode ser reconciliado com pedido interno.
 
-## Como o proximo capitulo usa este estado
+## Como o proximo capítulo usa este estado
 
-O capitulo 07 usa este estado para justificar Airflow: agora ha OLTP interno, transformacoes dbt e API externa batch que precisam rodar em ordem, com retries e backfill.
+O capítulo 07 usa este estado para justificar Airflow: agora ha OLTP interno, transformacoes dbt e API externa batch que precisam rodar em ordem, com retries e backfill.

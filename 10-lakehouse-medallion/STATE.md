@@ -1,27 +1,27 @@
-# Gabarito de estado - Capitulo 10
+# Gabarito de estado - Capítulo 10
 
-## Objetivo do capitulo
+## Objetivo do capítulo
 
-Transformar o data lake em lakehouse confiavel com Delta Lake e arquitetura Medallion.
+Transformar o data lake em lakehouse confiável com Delta Lake e arquitetura Medallion.
 
 ## Estado inicial
 
-O capitulo deve recriar o estado final do capitulo 09:
+O capítulo deve recriar o estado final do capítulo 09:
 
 - MinIO com dados crus;
 - dados curados em Parquet;
 - dados migrados para S3/MinIO;
-- metastore/catalogo do lake;
+- metastore/catálogo do lake;
 - jobs Spark basicos;
-- necessidade de transacoes, schema enforcement e time travel.
+- necessidade de transações, schema enforcement e time travel.
 
-## Etapas do capitulo
+## Etapas do capítulo
 
 1. Subir stack lakehouse: MinIO, Spark, Airflow, Trino e Metabase.
 2. Migrar dados crus para bronze Delta.
-3. Criar silver com limpeza, tipagem e deduplicacao.
-4. Criar gold com metricas de negocio.
-5. Registrar tabelas no metastore/catalogo.
+3. Criar silver com limpeza, tipagem e deduplicação.
+4. Criar gold com métricas de negócio.
+5. Registrar tabelas no metastore/catálogo.
 6. Configurar query engine para consultar gold.
 7. Apontar BI para a camada consultavel.
 
@@ -33,19 +33,19 @@ Ao final, deve existir:
 - silver Delta;
 - gold Delta;
 - `_delta_log` nas tabelas Delta;
-- tabelas registradas no catalogo;
+- tabelas registradas no catálogo;
 - gold consultavel por SQL;
-- metricas equivalentes aos marts anteriores.
+- métricas equivalentes aos marts anteriores.
 
-## Validacoes
+## Validações
 
 - Tabelas Delta possuem transaction log.
-- Gold bate com marts/warehouse anteriores para metricas principais.
-- Reprocessamento nao duplica dados.
-- Schema enforcement rejeita dado invalido.
+- Gold bate com marts/warehouse anteriores para métricas principais.
+- Reprocessamento não duplica dados.
+- Schema enforcement rejeita dado inválido.
 - Query engine consegue ler a gold.
-- Catalogo aponta para as localizacoes corretas das tabelas.
+- Catálogo aponta para as localizacoes corretas das tabelas.
 
-## Como o proximo capitulo usa este estado
+## Como o proximo capítulo usa este estado
 
-O capitulo 11 usa o lakehouse como destino de mudancas capturadas via CDC, reduzindo a necessidade de recargas batch completas.
+O capítulo 11 usa o lakehouse como destino de mudanças capturadas via CDC, reduzindo a necessidade de recargas batch completas.

@@ -1,22 +1,22 @@
-# Complemento tecnico - Ingestao batch de API externa
+# Complemento técnico - Ingestao batch de API externa
 
-## O que este capitulo aprofunda
+## O que este capítulo aprofunda
 
-Este capitulo adiciona uma fonte externa ao dominio. A plataforma deixa de depender apenas de tabelas internas e passa a lidar com contratos HTTP, janelas incrementais e falhas de integracao.
+Este capítulo adiciona uma fonte externa ao domínio. A plataforma deixa de depender apenas de tabelas internas e passa a lidar com contratos HTTP, janelas incrementais e falhas de integracao.
 
 ## Por que isso importa
 
-Empresas raramente vivem com uma unica origem. Alem do OLTP interno, surgem CRMs, ERPs, gateways de pagamento, parceiros logisticos, planilhas e APIs SaaS.
+Empresas raramente vivem com uma única origem. Além do OLTP interno, surgem CRMs, ERPs, gateways de pagamento, parceiros logisticos, planilhas e APIs SaaS.
 
 APIs externas trazem dores especificas:
 
 - indisponibilidade;
 - rate limit;
 - paginacao;
-- mudanca de contrato;
+- mudança de contrato;
 - dados atrasados;
 - reprocessamento por janela;
-- idempotencia no destino.
+- idempotência no destino.
 
 ## Por baixo dos panos
 
@@ -37,10 +37,10 @@ O destino inicial deve ser staging. Transformar direto no consumo final mistura 
 | --- | --- |
 | API batch em Python | Simples, bom para volumes moderados e endpoints HTTP. |
 | Airbyte | Muitos conectores prontos, bom para SaaS. |
-| Fivetran | Gerenciado, menos operacao, maior custo. |
-| Kafka source connector | Quando a fonte publica eventos ou existe conector adequado. |
-| Webhook | Quando a fonte externa envia mudancas por push. |
+| Fivetran | Gerenciado, menos operação, maior custo. |
+| Kafka source connector | Quando a fonte pública eventos ou existe conector adequado. |
+| Webhook | Quando a fonte externa envia mudanças por push. |
 
 ## Como conecta a trilha
 
-Esta etapa cria a dor que justifica Airflow. Com OLTP, dbt e API externa, ja existem dependencias e falhas suficientes para precisar de orquestracao.
+Esta etapa cria a dor que justifica Airflow. Com OLTP, dbt e API externa, já existem dependencias e falhas suficientes para precisar de orquestracao.

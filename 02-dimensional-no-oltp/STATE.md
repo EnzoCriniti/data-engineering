@@ -1,20 +1,20 @@
-# Gabarito de estado - Capitulo 02
+# Gabarito de estado - Capítulo 02
 
-## Objetivo do capitulo
+## Objetivo do capítulo
 
-Mostrar a primeira solucao pragmatica: criar a area analitica dentro do mesmo banco OLTP, em outro schema.
+Mostrar a primeira solucao pragmatica: criar a área analítica dentro do mesmo banco OLTP, em outro schema.
 
 ## Estado inicial
 
-O capitulo recria:
+O capítulo recria:
 
-- schema OLTP do capitulo 00;
-- dados sinteticos populados pelo seeder;
-- modelo dimensional conceitual do capitulo 01.
+- schema OLTP do capítulo 00;
+- dados sintéticos populados pelo seeder;
+- modelo dimensional conceitual do capítulo 01.
 
-## Etapas do capitulo
+## Etapas do capítulo
 
-1. Subir um unico Postgres.
+1. Subir um único Postgres.
 2. Criar tabelas OLTP no schema principal.
 3. Criar schema `analytics`.
 4. Criar tabelas dimensionais em `analytics`.
@@ -25,17 +25,17 @@ O capitulo recria:
 Ao final, o mesmo Postgres deve conter:
 
 - tabelas transacionais no schema principal;
-- tabelas analiticas no schema `analytics`;
+- tabelas analíticas no schema `analytics`;
 - origem populada;
-- separacao logica entre aplicacao e analytics, mas sem isolamento fisico.
+- separacao lógica entre aplicação e analytics, mas sem isolamento físico.
 
-## Validacoes
+## Validações
 
 - `public` contem tabelas OLTP.
 - `analytics` contem dimensoes e fato.
 - O seeder popula a origem.
-- A arquitetura deixa claro que os recursos fisicos continuam compartilhados.
+- A arquitetura deixa claro que os recursos físicos continuam compartilhados.
 
-## Como o proximo capitulo usa este estado
+## Como o proximo capítulo usa este estado
 
-O capitulo 03 parte da dor deste estado: schemas separados nao isolam CPU, memoria, I/O e conexoes. O proximo capitulo separa OLTP e warehouse em bancos diferentes.
+O capítulo 03 parte da dor deste estado: schemas separados não isolam CPU, memória, I/O e conexões. O proximo capítulo separa OLTP e warehouse em bancos diferentes.

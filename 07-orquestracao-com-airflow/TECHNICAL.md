@@ -1,18 +1,18 @@
-# Complemento tecnico - Apache Airflow e orquestracao
+# Complemento técnico - Apache Airflow e orquestracao
 
-## O que este capitulo aprofunda
+## O que este capítulo aprofunda
 
-Este capitulo trata da coordenacao de pipelines. A pergunta deixa de ser "como transformar dados?" e passa a ser "quando, em que ordem, com quais retries e com qual observabilidade?".
+Este capítulo trata da coordenacao de pipelines. A pergunta deixa de ser "como transformar dados?" e passa a ser "quando, em que ordem, com quais retries e com qual observabilidade?".
 
-## Pequena historia
+## Pequena história
 
-O Airflow foi criado no Airbnb por volta de 2014 para lidar com muitos workflows de dados definidos em codigo. Depois entrou no ecossistema Apache e se tornou uma das ferramentas mais conhecidas de orquestracao batch.
+O Airflow foi criado no Airbnb por volta de 2014 para lidar com muitos workflows de dados definidos em código. Depois entrou no ecossistema Apache e se tornou uma das ferramentas mais conhecidas de orquestracao batch.
 
-Ele se popularizou porque substituiu cron e scripts encadeados por DAGs declarativos em Python, com UI, historico de execucoes, logs e retries.
+Ele se popularizou porque substituiu cron e scripts encadeados por DAGs declarativos em Python, com UI, histórico de execucoes, logs e retries.
 
 ## Por baixo dos panos
 
-Airflow organiza trabalho em DAGs, Directed Acyclic Graphs. Um DAG e um grafo sem ciclos: uma tarefa pode depender de outra, mas a cadeia nao pode voltar para o inicio.
+Airflow organiza trabalho em DAGs, Directed Acyclic Graphs. Um DAG e um grafo sem ciclos: uma tarefa pode depender de outra, mas a cadeia não pode voltar para o inicio.
 
 Componentes principais:
 
@@ -22,15 +22,15 @@ Componentes principais:
 - Executor: define onde as tarefas rodam.
 - Workers: executam tarefas em setups distribuidos.
 
-Airflow nao deve processar dados pesados dentro do proprio processo da task. O padrao saudavel e ele disparar ferramentas externas: dbt, Spark, scripts, APIs, containers ou jobs Kubernetes.
+Airflow não deve processar dados pesados dentro do próprio processo da task. O padrão saudavel e ele disparar ferramentas externas: dbt, Spark, scripts, APIs, containers ou jobs Kubernetes.
 
 ## Conceitos operacionais
 
-Backfill permite reprocessar periodos passados. Isso so e seguro quando as tarefas sao idempotentes.
+Backfill permite reprocessar periodos passados. Isso só e seguro quando as tarefas são idempotentes.
 
-Retries ajudam com falhas transitorias, como API fora do ar. Mas retry nao corrige erro deterministico de codigo ou dado ruim.
+Retries ajudam com falhas transitorias, como API fora do ar. Mas retry não corrige erro deterministico de código ou dado ruim.
 
-SLA e alertas transformam pipeline em operacao. A pergunta deixa de ser "rodou?" e passa a ser "rodou dentro do esperado?".
+SLA e alertas transformam pipeline em operação. A pergunta deixa de ser "rodou?" e passa a ser "rodou dentro do esperado?".
 
 ## Tecnologias equivalentes
 
@@ -40,14 +40,14 @@ SLA e alertas transformam pipeline em operacao. A pergunta deixa de ser "rodou?"
 | Prefect | Experiencia Python fluida, boa para workflows dinamicos. |
 | Luigi | Mais antigo, simples, com menos plataforma ao redor. |
 | Argo Workflows | Kubernetes-native, forte para containers. |
-| cron | Simples, mas sem DAG, historico rico, retries e backfill nativos. |
+| cron | Simples, mas sem DAG, histórico rico, retries e backfill nativos. |
 
 ## Quando usar
 
-Use Airflow quando ha muitas tarefas batch, dependencias claras, necessidade de agendamento, historico e reprocessamento.
+Use Airflow quando ha muitas tarefas batch, dependencias claras, necessidade de agendamento, histórico e reprocessamento.
 
-Evite transformar Airflow em motor de processamento. Se uma task faz join gigante em memoria dentro do worker, a arquitetura esta errada; ela deveria disparar Spark, dbt ou outro motor adequado.
+Evite transformar Airflow em motor de processamento. Se uma task faz join gigante em memória dentro do worker, a arquitetura está errada; ela deveria disparar Spark, dbt ou outro motor adequado.
 
 ## Como isso aparece no projeto
 
-No capitulo 07, dbt vira uma tarefa dentro de um DAG. O Airflow coordena ingestao de multiplas fontes e garante que transformacoes so rodem depois que as dependencias estiverem prontas.
+No capítulo 07, dbt vira uma tarefa dentro de um DAG. O Airflow coordena ingestao de múltiplas fontes e garante que transformacoes só rodem depois que as dependencias estiverem prontas.

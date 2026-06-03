@@ -26,16 +26,22 @@ Os capitulos com status **Ambiente base** ainda nao implementam toda a integraca
 
 ## Como ler este repo
 
-Cada capitulo foi pensado para rodar isoladamente, um por vez, com o proprio `docker-compose.yml` quando houver ambiente implementado. Nao ha objetivo de subir varios capitulos ao mesmo tempo.
+Cada capítulo foi pensado para rodar isoladamente, um por vez, com o próprio `docker-compose.yml` quando houver ambiente implementado. Não há objetivo de subir vários capítulos ao mesmo tempo.
 
-O repositorio separa dois niveis de entrega:
+Cada capítulo tem três arquivos com papéis distintos:
 
-- **Ambiente base**: sobe os servicos principais no Docker para estudo e evolucao futura.
-- **Integracao implementada**: alem do ambiente, ja existe job/script/conector executavel que move ou transforma dados.
+- **README.md** — a narrativa: o cenário de negócio, por que a etapa existe, os conceitos e a "dor que sobra" que leva ao capítulo seguinte. É a camada conceitual, sem comandos de execução.
+- **RUNBOOK.md** — o guia rápido: como **subir e usar** o ambiente pronto, com os comandos, a saída esperada e as validações. É o que alguém segue para replicar o ambiente sem precisar construí-lo.
+- **BUILD.md** — o guia avançado: o passo a passo de **construção**, as decisões de projeto e a "definição de pronto". É o roteiro de quem implementa o capítulo do zero.
 
-O capitulo atual recria o estado final do capitulo anterior como seu estado inicial, executa sua propria evolucao e termina em um novo estado final que vira o gabarito do proximo.
+O repositório separa dois níveis de entrega:
 
-Para entender a empresa como um sistema completo, veja tambem [system-design](./system-design). Essa pasta consolida a arquitetura macro da NuvemStore: aplicacao, dominios, plataforma de dados, redes, seguranca, observabilidade e evolucao temporal.
+- **Ambiente base** 🟡: sobe os serviços principais no Docker para estudo e evolução futura; o BUILD descreve os jobs ainda a implementar.
+- **Integração implementada** 🟢: além do ambiente, já existe job/script/conector executável que move ou transforma dados.
+
+O capítulo atual recria o estado final do capítulo anterior como seu estado inicial (o "gabarito" em cada `STATE.md`), executa sua própria evolução e termina em um novo estado final que vira o gabarito do próximo.
+
+Para entender a empresa como um sistema completo, veja também [system-design](./system-design). Essa pasta consolida a arquitetura macro da NuvemStore: aplicação, domínios, plataforma de dados, redes, segurança, observabilidade e evolução temporal.
 
 ## Status da jornada
 

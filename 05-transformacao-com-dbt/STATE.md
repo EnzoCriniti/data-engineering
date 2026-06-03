@@ -1,20 +1,20 @@
-# Gabarito de estado - Capitulo 05
+# Gabarito de estado - Capítulo 05
 
-## Objetivo do capitulo
+## Objetivo do capítulo
 
 Substituir transformacoes SQL manuais por um projeto dbt com modelos, testes, documentacao e lineage.
 
 ## Estado inicial
 
-O capitulo deve recriar o estado final do capitulo 04:
+O capítulo deve recriar o estado final do capítulo 04:
 
 - origem OLTP populada;
-- dados raw carregados no destino analitico;
-- marts manuais usados como referencia.
+- dados raw carregados no destino analítico;
+- marts manuais usados como referência.
 
-## Etapas do capitulo
+## Etapas do capítulo
 
-1. Subir ambiente com destino analitico.
+1. Subir ambiente com destino analítico.
 2. Recriar raw tables a partir do pipeline anterior.
 3. Criar projeto dbt.
 4. Implementar modelos `staging`.
@@ -32,7 +32,7 @@ Ao final, deve existir:
 - marts dbt equivalentes aos marts manuais;
 - documentacao dbt gerada.
 
-## Validacoes
+## Validações
 
 - `dbt run` executa sem erro.
 - `dbt test` passa.
@@ -40,6 +40,6 @@ Ao final, deve existir:
 - Top produtos dbt bate com top produtos manual.
 - O lineage mostra dependencias entre raw, staging e marts.
 
-## Como o proximo capitulo usa este estado
+## Como o proximo capítulo usa este estado
 
-O capitulo 06 adiciona uma fonte externa batch. Depois disso, o capitulo 07 passa a orquestrar carga, API e transformacoes com Airflow.
+O capítulo 06 adiciona uma fonte externa batch. Depois disso, o capítulo 07 passa a orquestrar carga, API e transformacoes com Airflow.

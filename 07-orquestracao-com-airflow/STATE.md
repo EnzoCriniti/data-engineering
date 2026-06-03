@@ -1,46 +1,46 @@
-# Gabarito de estado - Capitulo 07
+# Gabarito de estado - Capítulo 07
 
-## Objetivo do capitulo
+## Objetivo do capítulo
 
 Orquestrar o pipeline existente com Airflow, adicionando dependencias, retries, logs e backfill.
 
 ## Estado inicial
 
-O capitulo deve recriar o estado final do capitulo 06:
+O capítulo deve recriar o estado final do capítulo 06:
 
 - origem populada;
 - raw tables carregadas;
 - transformacoes dbt implementadas;
-- testes dbt disponiveis.
+- testes dbt disponíveis.
 
-## Etapas do capitulo
+## Etapas do capítulo
 
 1. Subir Airflow.
 2. Criar DAG principal do pipeline.
-3. Adicionar tasks para seed/extracao/carga quando necessario.
+3. Adicionar tasks para seed/extracao/carga quando necessário.
 4. Adicionar task `dbt run`.
 5. Adicionar task `dbt test`.
 6. Configurar retries e logs.
-7. Parametrizar execucao por data.
+7. Parametrizar execução por data.
 
 ## Estado final esperado
 
 Ao final, deve existir:
 
 - DAG versionado;
-- execucao manual substituida por execucao orquestrada;
-- historico de runs no Airflow;
+- execução manual substituida por execução orquestrada;
+- histórico de runs no Airflow;
 - logs por task;
 - possibilidade de reprocessar uma janela.
 
-## Validacoes
+## Validações
 
 - DAG aparece na UI do Airflow.
 - Run completo termina com sucesso.
-- Falha em uma task nao executa dependentes indevidos.
+- Falha em uma task não executa dependentes indevidos.
 - Retry funciona em uma falha simulada.
-- Resultado final bate com execucao manual/dbt.
+- Resultado final bate com execução manual/dbt.
 
-## Como o proximo capitulo usa este estado
+## Como o proximo capítulo usa este estado
 
-O capitulo 08 parte de uma plataforma orquestrada, mas com limite de escala e rigidez para dados semi-estruturados. O proximo passo e introduzir data lake com Spark.
+O capítulo 08 parte de uma plataforma orquestrada, mas com limite de escala e rigidez para dados semi-estruturados. O proximo passo e introduzir data lake com Spark.

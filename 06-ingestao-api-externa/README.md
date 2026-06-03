@@ -1,61 +1,40 @@
-# Capitulo 06 - Ingestao batch de API externa
+# Capítulo 06 — Ingestão batch de API externa
 
-> De onde viemos: dbt organizou as transformacoes, mas a plataforma ainda depende basicamente do OLTP interno. Na vida real, logo aparecem fontes externas.
+> **De onde viemos:** o dbt organizou as transformações, mas a plataforma ainda depende basicamente do OLTP interno. Na vida real, logo aparecem fontes externas.
 
-## Cenario de negocio
+## Cenário de negócio
 
-A NuvemStore terceiriza parte das entregas para a Transportadora X. A transportadora expoe uma API simples com status de entrega, previsao, ocorrencias e timestamp de atualizacao.
+A NuvemStore terceiriza parte das entregas para a Transportadora X, que expõe uma API simples com status de entrega, previsão, ocorrências e timestamp de atualização. Essa fonte não pertence ao OLTP interno, mas precisa entrar no analytics para medir SLA, atraso e qualidade logística.
 
-Essa fonte nao pertence ao OLTP interno, mas precisa entrar no analytics para medir SLA, atraso e qualidade logistica.
+## Por que esta stack
+
+| Tecnologia | Por que entra | O que fica de fora |
+| --- | --- | --- |
+| API HTTP (fake) | Simula a fonte externa da transportadora. | — |
+| Postgres (staging) | Aterrissa o dado externo antes de transformar. | — |
+| Extractor Python | Extração incremental por janela de tempo. | Airflow — orquestração só no cap. 07. |
 
 ## Status desta etapa
 
-Status atual: **ambiente base/documentacao**.
+**Ambiente base/documentação.** O compose sobe uma API fake da transportadora e um Postgres de warehouse com schema `staging`. O extractor batch (paginação, controle incremental, idempotência) está roteirizado no [BUILD.md](./BUILD.md).
 
-O compose sobe:
+## Conceitos
 
-- uma API fake simples da transportadora;
-- um Postgres de warehouse com schema `staging`.
+**Fonte externa vs interna.** Diferente do OLTP, uma API externa não é controlada por você: pode mudar contrato, paginar, ter rate limit, cair, devolver duplicatas. Tratar isso é parte do trabalho.
 
-O extractor batch Python, paginacao, controle incremental e idempotencia serao implementados depois.
+**Janela incremental por `updated_at`.** Em vez de baixar tudo a cada execução, extrai-se apenas o que mudou desde o último checkpoint (`atualizado_em`). Reduz custo e tempo, mas exige guardar o checkpoint.
 
-## Como esta etapa migra a anterior
+**Idempotência por chave natural.** Como a API pode reentregar registros, a carga deduplica por `entrega_id` (upsert). Reexecutar a mesma janela não duplica.
 
-Esta etapa nao substitui o dbt. Ela adiciona uma nova fonte batch que depois sera transformada junto com os dados internos.
+**Staging antes de transformar.** O dado externo aterrissa cru em `staging.transportadora_entregas`; só depois o dbt cruza com o pedido interno. Isola "trazer" de "dar sentido".
 
-Plano de migracao:
+> Aprofundamento técnico (contratos de API, retry/backoff, paginação) em [`TECHNICAL.md`](./TECHNICAL.md).
 
-1. manter os marts internos do capitulo 05;
-2. subir API externa simulando a transportadora;
-3. extrair entregas por janela de `atualizado_em`;
-4. carregar dados em `staging.transportadora_entregas`;
-5. validar duplicidade por `entrega_id`;
-6. preparar dbt para cruzar pedido interno com status externo.
+## Como executar e como foi construído
 
-## Como subir
-
-```bash
-cp .env.example .env
-docker compose up -d
-```
-
-API fake:
-
-```text
-http://localhost:8088/entregas.json
-```
-
-## Conceitos principais
-
-- Fonte externa batch.
-- Contrato de API.
-- Janela incremental por `updated_at`.
-- Idempotencia por chave natural.
-- Staging antes de transformacao.
-- Retry e rate limit como dores para o Airflow.
-
-Veja o detalhamento em [TECHNICAL.md](./TECHNICAL.md).
+- **[RUNBOOK.md](./RUNBOOK.md)** — subir o ambiente base e consultar a API fake.
+- **[BUILD.md](./BUILD.md)** — o roteiro do extractor incremental e o plano de integração com o dbt.
 
 ## A dor que sobra
 
-Agora a plataforma tem OLTP interno, dbt e API externa batch. Rodar tudo manualmente fica fragil. Essa dor leva ao capitulo 07: Airflow.
+Agora a plataforma tem OLTP interno, dbt e uma API externa batch. Rodar tudo manualmente, na ordem certa, com retries, fica frágil. Essa dor leva ao [capítulo 07](../07-orquestracao-com-airflow): orquestração com Airflow.

@@ -1,10 +1,10 @@
 # Evolucao temporal da arquitetura
 
-Esta trilha deve ser lida como uma empresa aumentando maturidade, nao como uma arquitetura que nasceu pronta.
+Esta trilha deve ser lida como uma empresa aumentando maturidade, não como uma arquitetura que nasceu pronta.
 
-## Fase 1 - Aplicacao e origem
+## Fase 1 - Aplicação e origem
 
-Capitulos: `00`, `01`
+Capítulos: `00`, `01`
 
 Componentes centrais:
 
@@ -12,11 +12,11 @@ Componentes centrais:
 - OLTP;
 - modelo dimensional desenhado.
 
-Estado: ainda nao ha plataforma de dados real. Existe entendimento de dominio e modelagem.
+Estado: ainda não ha plataforma de dados real. Existe entendimento de domínio e modelagem.
 
 ## Fase 2 - Analytics inicial
 
-Capitulos: `02`, `03`, `04`
+Capítulos: `02`, `03`, `04`
 
 Componentes centrais:
 
@@ -27,11 +27,11 @@ Componentes centrais:
 Legado criado:
 
 - analytics no mesmo banco vira uma solucao superada;
-- SQL manual vira referencia, mas depois perde protagonismo para dbt.
+- SQL manual vira referência, mas depois perde protagonismo para dbt.
 
-## Fase 3 - Transformacao e multiplas fontes
+## Fase 3 - Transformacao e múltiplas fontes
 
-Capitulos: `05`, `06`, `07`
+Capítulos: `05`, `06`, `07`
 
 Componentes centrais:
 
@@ -43,7 +43,7 @@ Estado: a empresa passa a ter mais de uma fonte e precisa coordenar cargas.
 
 ## Fase 4 - Lake on-prem e migracao para object storage
 
-Capitulos: `08`, `09`
+Capítulos: `08`, `09`
 
 Componentes centrais:
 
@@ -54,12 +54,12 @@ Componentes centrais:
 
 Legado:
 
-- HDFS foi uma decisao inicial para aproveitar infraestrutura existente;
-- depois vira legado/migracao, nao destino final.
+- HDFS foi uma decisão inicial para aproveitar infraestrutura existente;
+- depois vira legado/migracao, não destino final.
 
 ## Fase 5 - Lakehouse
 
-Capitulo: `10`
+Capítulo: `10`
 
 Componentes centrais:
 
@@ -70,11 +70,11 @@ Componentes centrais:
 
 Legado relativo:
 
-- warehouse relacional continua util, mas deixa de ser a camada analitica principal para historico grande.
+- warehouse relacional contínua util, mas deixa de ser a camada analítica principal para histórico grande.
 
-## Fase 6 - Baixa latencia
+## Fase 6 - Baixa latência
 
-Capitulos: `11`, `12`
+Capítulos: `11`, `12`
 
 Componentes centrais:
 
@@ -86,12 +86,12 @@ Estado: a plataforma deixa de ser apenas batch.
 
 ## Fase 7 - Dados para ML
 
-Capitulo: `13`
+Capítulo: `13`
 
 Componentes centrais:
 
 - feature table;
-- features historicas e recentes;
+- features históricas e recentes;
 - base para scoring de fraude.
 
-Estado final: a plataforma atende BI, operacoes, near real-time e casos iniciais de ML.
+Estado final: a plataforma atende BI, operações, near real-time e casos iniciais de ML.

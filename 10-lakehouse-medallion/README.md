@@ -1,61 +1,42 @@
-# Capitulo 10 - Lakehouse + Medallion
+# Capítulo 10 — Lakehouse + Medallion 🟡
 
-> De onde viemos: o data lake guarda arquivos de forma barata e flexivel, mas arquivos soltos nao garantem transacoes, schema enforcement ou time travel.
+> **De onde viemos:** no [cap. 09](../09-migracao-hdfs-para-s3) movemos o lake para object storage barato e elástico. Mas arquivos soltos no S3 não garantem transações, schema enforcement nem time travel. O lakehouse traz a confiabilidade do warehouse sobre o storage barato do lake.
 
-## Cenario de negocio
+## Cenário de negócio
 
-A NuvemStore passou a depender do lake para decisoes. Um job parcial ou uma escrita concorrente pode deixar dados inconsistentes e afetar dashboards.
+A NuvemStore passou a depender do lake para decisões. Um job parcial ou uma escrita concorrente pode deixar dados inconsistentes e afetar dashboards. Sem transações, "leu no meio de uma escrita" vira número errado num relatório.
 
-Lakehouse entra para trazer confiabilidade de warehouse sobre storage barato.
+O lakehouse entra para dar garantias de warehouse (ACID, schema, histórico) sobre o object storage do cap. 09, organizando o dado em camadas de qualidade crescente — a arquitetura **Medallion**.
 
-## Status desta etapa
+## O que esta etapa mostra
 
-Status atual: **ambiente base**.
+Uma camada transacional (Delta Lake) sobre o S3/MinIO, processada por Spark e consultada por Trino, organizada em três níveis:
 
-O compose sobe:
-
-- MinIO;
-- Spark master e worker;
-- Airflow;
-- Trino;
-- catalogo/metastore herdado do lake para registrar tabelas;
-- Metabase.
-
-Os jobs Delta (`bronze.py`, `silver.py`, `gold.py`) e os catalogos Trino serao implementados depois.
-
-## Como subir
-
-```bash
-cp .env.example .env
-docker compose up -d
+```text
+bronze  -> dado cru, fiel à origem (ingestão sem transformar)
+silver  -> tipado, deduplicado, regras técnicas aplicadas
+gold    -> métricas de negócio, equivalentes aos marts anteriores
 ```
 
-## Conceitos principais
+## Conceitos
 
-- Lakehouse.
-- Delta Lake e `_delta_log`.
-- diferenca entre transaction log e metastore/catalogo.
-- ACID sobre object storage.
-- Medallion: bronze, silver e gold.
-- `MERGE`, schema enforcement e time travel.
-- Query engine sobre lakehouse.
+**Lakehouse.** Une o melhor dos dois mundos: storage barato e aberto do lake + garantias transacionais do warehouse. Não é um produto, é um padrão habilitado por formatos como Delta Lake e Iceberg.
 
-Veja o detalhamento em [TECHNICAL.md](./TECHNICAL.md).
+**Delta Lake e o `_delta_log`.** O Delta mantém um log de transações (`_delta_log`) ao lado dos Parquet. Esse log é o que dá ACID, schema enforcement e time travel sobre arquivos imutáveis. É distinto do metastore/catálogo: o log descreve o estado da tabela; o catálogo só diz "esta tabela existe e fica aqui".
 
-## Migracao esperada
+**Medallion (bronze/silver/gold).** Camadas de refinamento progressivo. Bronze preserva fidelidade à origem; silver limpa e tipa; gold entrega métricas prontas para consumo. Cada camada é um contrato claro de qualidade.
 
-Quando a integracao for implementada, este capitulo nao deve criar dados do zero. O fluxo esperado e migrar ou reprocessar dados que ja existem no warehouse/lake anterior, validar contagens e metricas, e entao reduzir a dependencia da camada antiga.
+**MERGE, schema enforcement e time travel.** `MERGE` faz upsert idempotente (chave da CDC do cap. 11). Schema enforcement rejeita escrita fora do esquema. Time travel consulta versões antigas da tabela — auditoria e rollback.
 
-Plano de migracao:
+> Detalhamento técnico em [`TECHNICAL.md`](./TECHNICAL.md).
 
-1. ler os dados raw/curados ja migrados para S3/MinIO no capitulo 09;
-2. recriar a camada bronze em Delta, preservando fidelidade a origem;
-3. construir silver com tipagem, deduplicacao e regras tecnicas;
-4. construir gold com metricas equivalentes aos marts anteriores;
-5. registrar bronze, silver e gold no catalogo/metastore;
-6. comparar gold vs marts/warehouse anteriores antes de apontar BI para o lakehouse;
-7. manter a camada antiga apenas como fallback ate a validacao passar.
+## Status e como executar
+
+**Status: 🟡 ambiente base.** O compose sobe MinIO, Spark, Airflow, Trino, metastore e Metabase. Os jobs Delta (`bronze.py`, `silver.py`, `gold.py`) e os catálogos Trino são o roteiro de construção descrito no BUILD.
+
+- **[RUNBOOK.md](./RUNBOOK.md)** — subir o ambiente lakehouse e acessar as UIs.
+- **[BUILD.md](./BUILD.md)** — o roteiro Medallion: bronze→silver→gold em Delta, registro no catálogo e a equivalência gold vs marts anteriores.
 
 ## A dor que sobra
 
-Mesmo confiavel, o lakehouse ainda e batch. Para reduzir latencia, a proxima dor e capturar mudancas continuamente. Isso leva ao capitulo 11: CDC com Debezium.
+Mesmo confiável, o lakehouse ainda é batch. Para reduzir a latência, a próxima dor é capturar mudanças continuamente, direto do banco. → [Capítulo 11: CDC com Debezium](../11-cdc-com-debezium).

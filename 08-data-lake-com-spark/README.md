@@ -1,69 +1,42 @@
-# Capitulo 08 - Data Lake on-prem com HDFS
+# Capítulo 08 — Data Lake on-prem com HDFS 🟡
 
-> De onde viemos: a plataforma ja tem OLTP, warehouse, dbt, API externa e Airflow. Agora o volume de dados semi-estruturados cresce e a empresa decide aproveitar infraestrutura on-prem existente para criar um data lake.
+> **De onde viemos:** a plataforma já tem OLTP, warehouse, dbt, API externa e Airflow. Agora o volume de dados semi-estruturados cresce e a empresa decide aproveitar a infraestrutura on-prem existente para criar um data lake.
 
-## Cenario de negocio
+## Cenário de negócio
 
-A NuvemStore recebe eventos de navegacao em JSON: page views, cliques, sessoes e interacoes com produtos. Carregar tudo direto em um warehouse relacional fica caro e rigido.
+A NuvemStore passa a receber eventos de navegação em JSON: page views, cliques, sessões e interações com produtos. Carregar tudo direto num warehouse relacional fica caro e rígido — é dado de alto volume, formato variável e valor por linha baixo.
 
-Como a empresa ja possui servidores on-prem, a primeira decisao e montar um lake em HDFS. Isso aproveita hardware existente e oferece data locality para jobs Spark, mas tambem cria acoplamento entre storage e compute.
+Como a empresa já possui servidores on-prem, a primeira decisão é montar um lake em **HDFS**. Isso aproveita o hardware existente e oferece *data locality* para os jobs Spark, mas também cria um acoplamento entre storage e compute — a dor que o cap. 09 vai resolver.
 
-## Status desta etapa
+## O que esta etapa mostra
 
-Status atual: **ambiente base**.
+Um lake distribuído com três peças clássicas, todas no `docker-compose.yml`:
 
-O compose sobe:
+- **HDFS** (namenode + datanode) — o storage distribuído.
+- **Spark** (master + worker) — o motor de processamento distribuído.
+- **Hive Metastore** — o catálogo que registra as tabelas e os datasets do lake.
 
-- HDFS namenode e datanode;
-- Spark master e worker;
-- Hive Metastore, como catalogo de tabelas/datasets do lake.
+O padrão de dados é **schema-on-read**: o JSON cru entra como está e o schema é aplicado na leitura pelo Spark, não na escrita.
 
-Os jobs de ingestao e curadoria (`ingest_raw.py`, `build_curated.py`) serao implementados depois.
+## Conceitos
 
-## Como esta etapa migra a anterior
+**Data lake e schema-on-read.** Diferente do warehouse (schema-on-write, tudo tipado na entrada), o lake guarda o dado bruto e aplica estrutura só na leitura. Ganha flexibilidade para dados semi-estruturados; perde as garantias automáticas de qualidade.
 
-O data lake entra porque o warehouse nao e mais o melhor lugar para tudo. Ele recebe dados brutos e historicos que antes ficariam caros ou rigidos no warehouse.
+**HDFS e data locality.** O HDFS distribui blocos entre datanodes; o Spark agenda a computação perto do dado, reduzindo o tráfego de rede. É a vantagem do on-prem acoplado — e também sua rigidez, porque storage e compute crescem juntos.
 
-Plano de migracao:
+**Metastore como catálogo.** O Hive Metastore guarda o mapa "este caminho no lake é esta tabela, com estas colunas". Sem ele, o lake vira um amontoado de arquivos sem semântica.
 
-1. manter o warehouse para marts analiticos existentes;
-2. carregar dados crus e historicos no HDFS;
-3. usar Spark para converter JSON/CSV cru em Parquet curado;
-4. registrar datasets no metastore;
-5. comparar volumes e amostras contra origem/warehouse;
-6. manter no warehouse apenas o que precisa ser servido como mart.
+**Spark como motor distribuído.** Lê JSON/CSV cru, converte para **Parquet** curado (colunar, comprimido, tipado) e registra no metastore. Conceitos de performance a dominar: shuffle, particionamento, broadcast join e skew.
 
-## Como subir
+> Detalhamento técnico em [`TECHNICAL.md`](./TECHNICAL.md).
 
-```bash
-cp .env.example .env
-docker compose up -d
-```
+## Status e como executar
 
-HDFS NameNode:
+**Status: 🟡 ambiente base.** O compose sobe HDFS, Spark e o metastore prontos para receber jobs; a ingestão e a curadoria (`ingest_raw.py`, `build_curated.py`) são o roteiro de construção descrito no BUILD.
 
-```text
-http://localhost:9870
-```
-
-UI do Spark master:
-
-```text
-http://localhost:8090
-```
-
-## Conceitos principais
-
-- Data lake e schema-on-read.
-- HDFS e data locality.
-- Metastore/catalogo para registrar datasets.
-- Spark como motor distribuido.
-- JSON cru como entrada.
-- Parquet como formato curado.
-- Shuffle, particionamento, broadcast join e skew.
-
-Veja o detalhamento em [TECHNICAL.md](./TECHNICAL.md).
+- **[RUNBOOK.md](./RUNBOOK.md)** — subir o lake (HDFS + Spark + metastore) e acessar as UIs.
+- **[BUILD.md](./BUILD.md)** — o roteiro de implementação dos jobs Spark: JSON cru → Parquet curado, registro no metastore e o plano de migração desde o warehouse.
 
 ## A dor que sobra
 
-O lake em HDFS funciona, mas operar storage on-prem fica rigido: storage e compute escalam juntos, a manutencao pesa, e a empresa quer elasticidade. Essa dor leva ao capitulo 09: migracao de HDFS para S3/MinIO.
+O lake em HDFS funciona, mas operar storage on-prem é rígido: storage e compute escalam juntos, a manutenção pesa e a empresa quer elasticidade. → [Capítulo 09: migração de HDFS para S3/MinIO](../09-migracao-hdfs-para-s3).

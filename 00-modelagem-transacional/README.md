@@ -10,7 +10,7 @@ Engenharia de dados não começa no pipeline; começa em **entender o modelo da 
 
 A **NuvemStore** (o e-commerce que acompanha toda a trilha) precisa de um banco que sustente o site: registrar clientes, produtos, pedidos e itens de pedido com **escritas rápidas, consistentes e sem redundância**. Esse é o trabalho de um modelo **OLTP** (Online Transaction Processing).
 
-> 📋 O domínio completo — negócio, fontes e necessidades futuras — está no [`COMPANY.md`](../COMPANY.md). As decisões de modelagem abaixo derivam diretamente dele: por exemplo, separar **pagamento** como entidade própria existe para viabilizar o CDC de fraude do cap. 10.
+> 📋 O domínio completo — negócio, fontes e necessidades futuras — está no [`COMPANY.md`](../COMPANY.md). As decisões de modelagem abaixo derivam diretamente dele: por exemplo, separar **pagamento** como entidade própria existe para viabilizar o CDC de fraude do cap. 11.
 
 ## O modelo (normalizado)
 
@@ -76,7 +76,7 @@ erDiagram
     }
 ```
 
-As três entidades extras — **pagamento**, **entrega** e **entregador** — existem para suportar capítulos futuros: `pagamento` (com `atualizado_em`) é a fonte do **CDC de fraude** (cap. 10), e `entrega`/`entregador` ancoram os **eventos de GPS** do streaming (cap. 11). Modelar a origem já contemplando isso é o que diferencia uma plataforma planejada de uma remendada.
+As três entidades extras — **pagamento**, **entrega** e **entregador** — existem para suportar capítulos futuros: `pagamento` (com `atualizado_em`) é a fonte do **CDC de fraude** (cap. 11), e `entrega`/`entregador` ancoram os **eventos de GPS** do streaming (cap. 12). Modelar a origem já contemplando isso é o que diferencia uma plataforma planejada de uma remendada.
 
 > Há também um ERD gerado por código em [`diagrams/architecture.py`](./diagrams/architecture.py), consistente com os demais diagramas do repo.
 
@@ -98,12 +98,17 @@ O resultado: o nome da categoria mora **só** na tabela `categoria`, não repeti
 
 **Por que o engenheiro de dados precisa disso.** A origem normalizada é ótima para escrever, mas **péssima para analisar** — uma pergunta de negócio simples ("receita por categoria") exige juntar 4 ou 5 tabelas. Essa dor é exatamente o que motiva a modelagem dimensional do próximo capítulo: o engenheiro de dados é quem faz a **ponte entre o modelo de escrita e o modelo de leitura**.
 
-## Implementação
+> Aprofundamento técnico (ACID, MVCC, WAL, alternativas ao Postgres) em [`TECHNICAL.md`](./TECHNICAL.md).
 
-- [x] `ddl/schema.sql` — `CREATE TABLE` das entidades transacionais com PKs, FKs e constraints.
-- [x] `seed/seed.py` — seeder idempotente com Faker para popular a origem usada pelos capítulos seguintes.
-- [x] `diagrams/architecture.py` — ERD gerado por código.
+## Como executar e como foi construído
+
+Este README descreve o *porquê* do modelo. Os comandos e a construção ficam em dois guias separados:
+
+- **[RUNBOOK.md](./RUNBOOK.md)** — subir e usar a origem já pronta (comandos prontos, saída esperada, validações).
+- **[BUILD.md](./BUILD.md)** — o passo a passo detalhado de construção do schema, do seeder e do diagrama, com as decisões de modelagem.
+
+> Este capítulo é a **fundação compartilhada**: não tem `docker-compose.yml` próprio. O schema e o seeder são reaproveitados pelos capítulos seguintes, e a origem sobe pela primeira vez no [capítulo 02](../02-dimensional-no-oltp).
 
 ## A dor que sobra
 
-O modelo é limpo para escrever, mas responder qualquer pergunta analítica exige joins pesados e lentos — inviável em escala e hostil para quem só quer um número. **Precisamos de um modelo desenhado para ler.** → Capítulo 01: Modelagem dimensional.
+O modelo é limpo para escrever, mas responder qualquer pergunta analítica exige joins pesados e lentos — inviável em escala e hostil para quem só quer um número. **Precisamos de um modelo desenhado para ler.** → [Capítulo 01: Modelagem dimensional](../01-modelagem-dimensional).

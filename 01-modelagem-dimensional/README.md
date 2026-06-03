@@ -6,7 +6,7 @@
 
 O time de analytics da **NuvemStore** quer responder, rápido: *"receita por categoria, por região, por mês"*, *"qual o ticket médio por trimestre?"*. No modelo OLTP normalizado isso é lento e cheio de joins. A solução é um **modelo dimensional** — desenhado para análise, não para transação.
 
-> 📋 As dimensões e o grão aqui escolhidos atendem necessidades já mapeadas no [`COMPANY.md`](../COMPANY.md) — ex.: a dimensão cliente usa **SCD Tipo 2** porque o negócio precisa do histórico de mudanças (cliente que troca de cidade), e há particionamento por data pensando no tiering de storage do cap. 13.
+> 📋 As dimensões e o grão aqui escolhidos atendem necessidades já mapeadas no [`COMPANY.md`](../COMPANY.md) — ex.: a dimensão cliente usa **SCD Tipo 2** porque o negócio precisa do histórico de mudanças (cliente que troca de cidade), e há particionamento por data pensando no tiering de storage do cap. 09.
 
 ## O modelo (star schema)
 
@@ -76,13 +76,15 @@ No Capítulo 00 normalizamos para **eliminar** redundância. Aqui fazemos o **op
 
 **Kimball vs Inmon.** Duas escolas de DW. *Kimball* (bottom-up, data marts dimensionais) é o que seguimos aqui — pragmático e orientado a consulta. *Inmon* (top-up, warehouse normalizado corporativo) é mais centralizado. Saber que existem as duas abordagens mostra maturidade.
 
-## O que implementar (esqueleto)
+> Aprofundamento técnico (Kimball vs Inmon, SCD em profundidade, agregações) em [`TECHNICAL.md`](./TECHNICAL.md).
 
-- [ ] `ddl/star_schema.sql` — fato + dimensões com surrogate keys
-- [ ] notas sobre o grão escolhido e justificativa
-- [ ] exemplo de transformação OLTP (cap. 00) → dimensional (a "ponte")
-- [ ] `diagrams/architecture.py` — ERD do star schema
+## Como executar e como foi construído
+
+Este capítulo é **de modelagem** — não sobe um ambiente próprio; o star schema é materializado a partir do cap. 02 (no mesmo OLTP) e do cap. 03 (warehouse dedicado).
+
+- **[RUNBOOK.md](./RUNBOOK.md)** — como ver o modelo dimensional materializado (aponta para os caps. 02/03).
+- **[BUILD.md](./BUILD.md)** — o passo a passo de desenho do star schema: grão, surrogate keys, SCD2 e a "ponte" OLTP → dimensional.
 
 ## A dor que sobra
 
-Temos o modelo de origem (cap. 00) e o modelo analítico (cap. 01) desenhados. Mas eles são só **schemas** — ainda falta materializar esse desenho em um ambiente. → Capítulo 02: dimensional no mesmo OLTP.
+Temos o modelo de origem (cap. 00) e o modelo analítico (cap. 01) desenhados. Mas eles são só **schemas** — ainda falta materializar esse desenho em um ambiente. → [Capítulo 02: dimensional no mesmo OLTP](../02-dimensional-no-oltp).

@@ -1,57 +1,41 @@
-# Capitulo 07 - Orquestracao com Airflow
+# Capítulo 07 — Orquestração com Airflow
 
-> De onde viemos: dbt organiza transformacoes, mas nao coordena varias fontes, retries, backfill e dependencias entre pipelines.
+> **De onde viemos:** o dbt organiza transformações e o cap. 06 trouxe uma fonte externa, mas nada coordena as várias cargas, retries, backfill e dependências entre pipelines. Rodar tudo na mão, na ordem certa, virou frágil.
 
-## Cenario de negocio
+## Cenário de negócio
 
-A NuvemStore passa a ter multiplas fontes: Postgres de pedidos, arquivos de logistica e API de marketing. A transformacao so pode rodar depois que todas as cargas terminarem.
+A NuvemStore agora tem múltiplas fontes: o OLTP de pedidos, a API da transportadora e os marts dbt. A transformação só pode rodar depois que todas as cargas terminarem. O `cron` não sabe expressar essa dependência de forma segura — não tem noção de "esperar a carga X terminar", nem de retry, nem de backfill. Entra o Airflow.
 
-Cron nao sabe expressar essa dependencia de forma segura. Airflow entra para orquestrar.
+## Por que Airflow entra aqui
+
+| Capacidade | Por que importa | Por que o cron não basta |
+| --- | --- | --- |
+| DAG (dependências) | A transformação espera as cargas. | cron só agenda horários, não dependências. |
+| Retries | API externa falha de forma transitória. | cron não retenta com política. |
+| Backfill | Reprocessar uma data específica. | cron não parametriza execução por data. |
+| Logs por task | Saber o que falhou e onde. | cron joga tudo num log só. |
+
+> O que fica **deliberadamente de fora**: Airflow **não processa nem consulta** dado. Ele agenda, ordena, retenta e faz backfill. Processar é trabalho do Spark/dbt; consultar é do Trino. Confundir esses papéis é erro clássico de entrevista.
 
 ## Status desta etapa
 
-Status atual: **ambiente/documentacao**.
+**Ambiente/documentação.** O compose sobe o Airflow em modo `standalone` para estudo. Os DAGs reais estão roteirizados no [BUILD.md](./BUILD.md).
 
-O compose sobe o Airflow em modo `standalone` para estudo e futura implementacao de DAGs. Os DAGs reais ainda serao adicionados depois.
+## Conceitos
 
-## Como esta etapa migra a anterior
+**DAG.** Um *Directed Acyclic Graph* descreve tarefas e suas dependências. O Airflow garante que uma task só roda quando as de que ela depende terminaram com sucesso.
 
-Airflow nao substitui dbt nem o pipeline; ele passa a coordenar o que ja existe.
+**Idempotência e execução por data.** Cada run é parametrizada por uma data lógica (`data_interval`). Reprocessar uma data (backfill) deve produzir o mesmo resultado — o que só funciona se as tasks subjacentes (seeder, extractor, dbt) forem idempotentes, como construímos nos capítulos anteriores.
 
-Plano de migracao:
+**Orquestração ≠ processamento.** O DAG chama os jobs que já existem (extração, carga, `dbt build`); ele não reimplementa a lógica deles.
 
-1. pegar os comandos manuais dos capitulos anteriores como tarefas do DAG;
-2. transformar `seeder`, extracao/carga, dbt run e dbt test em tasks com dependencias claras;
-3. parametrizar execucoes por data para permitir backfill;
-4. comparar uma execucao manual com uma execucao orquestrada;
-5. reduzir o uso de scripts soltos e cron depois que o DAG estiver confiavel.
+> Aprofundamento técnico (scheduler, executors, sensors, XCom) em [`TECHNICAL.md`](./TECHNICAL.md).
 
-## Como subir o ambiente base
+## Como executar e como foi construído
 
-```bash
-cp .env.example .env
-docker compose up -d airflow
-```
-
-UI do Airflow:
-
-```text
-http://localhost:8080
-```
-
-Para subir o BI opcional:
-
-```bash
-docker compose --profile bi up -d metabase
-```
-
-## O que entra na integracao futura
-
-- DAG de ingestao de multiplas fontes.
-- Task chamando o pipeline/dbt.
-- Retries e backfill.
-- Logs e checkpoints por data de execucao.
+- **[RUNBOOK.md](./RUNBOOK.md)** — subir o Airflow e o BI opcional.
+- **[BUILD.md](./BUILD.md)** — o roteiro do DAG que coordena OLTP, API externa e dbt, com retries e backfill.
 
 ## A dor que sobra
 
-Com orquestracao resolvida, a proxima dor e escala: dados semi-estruturados e volume alto. Isso leva ao capitulo 08: Data Lake com Spark.
+Com a orquestração resolvida, a próxima dor é **escala**: dados semi-estruturados (eventos de navegação, JSON) e volume alto estouram o warehouse relacional. Isso leva ao [capítulo 08](../08-data-lake-com-spark): Data Lake com Spark.

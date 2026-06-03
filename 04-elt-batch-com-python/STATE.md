@@ -1,18 +1,18 @@
-# Gabarito de estado - Capitulo 04
+# Gabarito de estado - Capítulo 04
 
-## Objetivo do capitulo
+## Objetivo do capítulo
 
-Implementar o primeiro ELT batch com Python: extrair do OLTP, carregar raw no destino analitico e criar marts.
+Implementar o primeiro ELT batch com Python: extrair do OLTP, carregar raw no destino analítico e criar marts.
 
 ## Estado inicial
 
-O capitulo recria:
+O capítulo recria:
 
 - origem OLTP populada;
-- separacao entre origem e area analitica;
+- separacao entre origem e área analítica;
 - necessidade de mover dados sem consultar analytics direto no banco transacional.
 
-## Etapas do capitulo
+## Etapas do capítulo
 
 1. Subir Postgres OLTP.
 2. Popular a origem com `seeder`.
@@ -30,13 +30,13 @@ Ao final, deve existir:
 - `mart_receita_diaria`;
 - `mart_top_produtos`.
 
-## Validacoes
+## Validações
 
 - Quantidade de linhas raw bate com a origem.
-- Receita dos marts bate com a soma dos itens de pedidos nao cancelados.
-- Rodar o pipeline novamente nao duplica resultados.
+- Receita dos marts bate com a soma dos itens de pedidos não cancelados.
+- Rodar o pipeline novamente não duplica resultados.
 - O DuckDB pode ser inspecionado localmente.
 
-## Como o proximo capitulo usa este estado
+## Como o proximo capítulo usa este estado
 
-O capitulo 05 usa os marts manuais como gabarito. dbt deve recriar os mesmos resultados com modelos, testes e lineage.
+O capítulo 05 usa os marts manuais como gabarito. dbt deve recriar os mesmos resultados com modelos, testes e lineage.
