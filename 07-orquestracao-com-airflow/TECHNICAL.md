@@ -1,4 +1,4 @@
-# Complemento técnico - Apache Airflow e orquestracao
+# Complemento técnico — Apache Airflow e orquestração
 
 ## O que este capítulo aprofunda
 
@@ -51,3 +51,9 @@ Evite transformar Airflow em motor de processamento. Se uma task faz join gigant
 ## Como isso aparece no projeto
 
 No capítulo 07, dbt vira uma tarefa dentro de um DAG. O Airflow coordena ingestao de múltiplas fontes e garante que transformacoes só rodem depois que as dependencias estiverem prontas.
+
+## 📚 Referências
+
+- [Apache Airflow Documentation](https://airflow.apache.org/docs/) — referência oficial com guia de conceitos, operadores e configuração.
+- [Airflow Best Practices](https://airflow.apache.org/docs/apache-airflow/stable/best-practices.html) — padrões recomendados para DAGs de produção.
+- [Dagster Documentation](https://docs.dagster.io/) — orquestrador moderno com foco em assets e observabilidade.

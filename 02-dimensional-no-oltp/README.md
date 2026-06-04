@@ -34,10 +34,9 @@ Uma query de "receita por categoria" pode competir com o checkout. Um `VACUUM`, 
 
 **Contenção de recursos.** O conceito que motiva o resto da trilha: quando OLTP e OLAP compartilham o mesmo motor, picos de um degradam o outro. É o argumento para o warehouse dedicado.
 
-## Como executar e como foi construído
+## Como executar
 
-- **[RUNBOOK.md](./RUNBOOK.md)** — subir o ambiente (um Postgres com os dois schemas) e popular a origem com um comando pronto.
-- **[BUILD.md](./BUILD.md)** — como o ambiente foi montado: o DDL do `analytics`, a reutilização do schema e do seeder do cap. 00 e o porquê de ainda não haver carga aqui.
+Para subir o ambiente (um Postgres com os dois schemas) e popular a origem com um comando pronto, veja o **[RUNBOOK.md](./RUNBOOK.md)**.
 
 > Aprofundamento técnico em [`TECHNICAL.md`](./TECHNICAL.md).
 

@@ -1,4 +1,4 @@
-# Complemento técnico - HDFS, S3 e migracao de storage
+# Complemento técnico — HDFS, S3 e migração de storage
 
 ## O que este capítulo aprofunda
 
@@ -59,3 +59,9 @@ Evite se o volume e pequeno ou se a operação do ambiente hibrido custa mais qu
 ## Como isso aparece no projeto
 
 O capítulo 09 mostra que a evolucao para object storage raramente acontece em um ambiente vazio. A camada física de storage também precisa lidar com legado, migracao, custo, latência e continuidade operacional.
+
+## 📚 Referências
+
+- [MinIO Documentation](https://min.io/docs/minio/linux/index.html) — object storage S3-compatible para desenvolvimento local e on-prem.
+- [AWS S3 Storage Classes](https://aws.amazon.com/s3/storage-classes/) — tiers de armazenamento da AWS com preços e latências.
+- [Trino Hive Connector](https://trino.io/docs/current/connector/hive.html) — federação SQL sobre HDFS e S3 via metastore.

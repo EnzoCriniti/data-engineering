@@ -78,12 +78,9 @@ No Capítulo 00 normalizamos para **eliminar** redundância. Aqui fazemos o **op
 
 > Aprofundamento técnico (Kimball vs Inmon, SCD em profundidade, agregações) em [`TECHNICAL.md`](./TECHNICAL.md).
 
-## Como executar e como foi construído
+## Como executar
 
-Este capítulo é **de modelagem** — não sobe um ambiente próprio; o star schema é materializado a partir do cap. 02 (no mesmo OLTP) e do cap. 03 (warehouse dedicado).
-
-- **[RUNBOOK.md](./RUNBOOK.md)** — como ver o modelo dimensional materializado (aponta para os caps. 02/03).
-- **[BUILD.md](./BUILD.md)** — o passo a passo de desenho do star schema: grão, surrogate keys, SCD2 e a "ponte" OLTP → dimensional.
+Este capítulo é **de modelagem** — não sobe um ambiente próprio; o star schema é materializado a partir do cap. 02 (no mesmo OLTP) e do cap. 03 (warehouse dedicado). O **[RUNBOOK.md](./RUNBOOK.md)** mostra como ver o modelo materializado (aponta para os caps. 02/03).
 
 ## A dor que sobra
 

@@ -100,12 +100,9 @@ O resultado: o nome da categoria mora **só** na tabela `categoria`, não repeti
 
 > Aprofundamento técnico (ACID, MVCC, WAL, alternativas ao Postgres) em [`TECHNICAL.md`](./TECHNICAL.md).
 
-## Como executar e como foi construído
+## Como executar
 
-Este README descreve o *porquê* do modelo. Os comandos e a construção ficam em dois guias separados:
-
-- **[RUNBOOK.md](./RUNBOOK.md)** — subir e usar a origem já pronta (comandos prontos, saída esperada, validações).
-- **[BUILD.md](./BUILD.md)** — o passo a passo detalhado de construção do schema, do seeder e do diagrama, com as decisões de modelagem.
+Este README descreve o *porquê* do modelo. Para subir e usar a origem — comandos, saída esperada e validações — veja o **[RUNBOOK.md](./RUNBOOK.md)**.
 
 > Este capítulo é a **fundação compartilhada**: não tem `docker-compose.yml` próprio. O schema e o seeder são reaproveitados pelos capítulos seguintes, e a origem sobe pela primeira vez no [capítulo 02](../02-dimensional-no-oltp).
 

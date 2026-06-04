@@ -1,4 +1,4 @@
-# Complemento técnico - Modelagem dimensional e OLAP
+# Complemento técnico — Modelagem dimensional e OLAP
 
 ## O que este capítulo aprofunda
 
@@ -50,3 +50,9 @@ Evite usar star schema como banco transacional. Ele duplica atributos, não e id
 ## Como isso aparece no projeto
 
 Este capítulo desenha a camada analítica alvo. O capítulo 02 mostra a primeira materializacao no mesmo OLTP, o capítulo 03 separa o warehouse e o capítulo 05 melhora transformacoes com dbt.
+
+## 📚 Referências
+
+- [The Data Warehouse Toolkit — Kimball](https://www.kimballgroup.com/data-warehouse-business-intelligence-resources/kimball-techniques/dimensional-modeling-techniques/) — técnicas de modelagem dimensional.
+- [Building a Data Warehouse — Inmon](https://en.wikipedia.org/wiki/Bill_Inmon) — abordagem corporativa centralizada.
+- [Data Vault 2.0](https://datavaultalliance.com/) — modelagem historizada e auditável como alternativa.

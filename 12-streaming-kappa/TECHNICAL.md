@@ -1,4 +1,4 @@
-# Complemento técnico - Streaming, Kappa e processamento com estado
+# Complemento técnico — Streaming, Kappa e processamento com estado
 
 ## O que este capítulo aprofunda
 
@@ -49,3 +49,10 @@ Evite streaming quando um batch de hora em hora resolve. Streaming aumenta compl
 ## Como isso aparece no projeto
 
 O capítulo 12 usa eventos de GPS para demonstrar métricas ao vivo. A arquitetura Kappa mostra que o mesmo log pode alimentar tempo real, reprocessamento histórico e features recentes para casos de ML.
+
+## 📚 Referências
+
+- [Spark Structured Streaming Guide](https://spark.apache.org/docs/latest/structured-streaming-programming-guide.html) — referência oficial com event time, watermarks e output modes.
+- [Kappa Architecture — Jay Kreps](https://www.oreilly.com/radar/questioning-the-lambda-architecture/) — artigo original questionando Lambda e propondo Kappa.
+- [Apache Flink Documentation](https://flink.apache.org/docs/stable/) — engine de streaming alternativa com forte suporte a estado e event time.
+- [Designing Data-Intensive Applications — Kleppmann](https://dataintensive.net/) — capítulos 11-12 cobrem streaming e processamento de eventos.

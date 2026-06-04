@@ -20,13 +20,7 @@ O capítulo 04 provou que SQL de transformação solto não escala em confiabili
 
 ## Status desta etapa
 
-**Ambiente/documentação.** O projeto dbt ainda não está implementado; o compose deixa a camada de BI pronta para quando os marts forem materializados. O roteiro completo de implementação está no [BUILD.md](./BUILD.md).
-
-## Arquitetura
-
-![Arquitetura](./diagrams/architecture.png)
-
-> Código do diagrama: [`diagrams/architecture.py`](./diagrams/architecture.py).
+**Ambiente base.** O projeto dbt ainda não está implementado; o compose deixa a camada de BI pronta para quando os marts forem materializados.
 
 ## Conceitos
 
@@ -40,10 +34,9 @@ O capítulo 04 provou que SQL de transformação solto não escala em confiabili
 
 > Aprofundamento técnico (materializações, snapshots/SCD, Jinja) em [`TECHNICAL.md`](./TECHNICAL.md).
 
-## Como executar e como foi construído
+## Como executar
 
-- **[RUNBOOK.md](./RUNBOOK.md)** — subir o ambiente base (e, quando implementado, rodar `dbt build`).
-- **[BUILD.md](./BUILD.md)** — o roteiro de implementação do projeto dbt e o plano de migração das transformações do cap. 04.
+Este README descreve o *porquê*. Para subir o ambiente base (e, quando implementado, rodar `dbt build`) veja o **[RUNBOOK.md](./RUNBOOK.md)**.
 
 ## A dor que sobra
 

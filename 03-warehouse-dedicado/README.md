@@ -32,12 +32,9 @@ Dois bancos independentes e um job de carga que materializa o modelo dimensional
 
 **Reconciliação.** Toda migração precisa de uma prova de equivalência. Aqui, a receita total em `fct_vendas` deve bater com a receita de itens não cancelados no OLTP. Sem essa checagem, uma migração silenciosamente errada vira decisão de negócio errada.
 
-## Como executar e como foi construído
+## Como executar
 
-Este README descreve o *porquê*. Os comandos e a construção ficam em dois guias separados:
-
-- **[RUNBOOK.md](./RUNBOOK.md)** — subir e usar o ambiente já pronto (comandos prontos, saída esperada, validações).
-- **[BUILD.md](./BUILD.md)** — o passo a passo detalhado de construção, com as decisões de implementação.
+Este README descreve o *porquê*. Para subir e usar o ambiente — comandos, saída esperada e validações — veja o **[RUNBOOK.md](./RUNBOOK.md)**.
 
 ## A dor que sobra
 

@@ -31,10 +31,30 @@ A captura de mudanças do Postgres via log, transportada por um log Kafka-compat
 
 ## Status e como executar
 
-**Status: 🟡 ambiente base.** O compose sobe Postgres (logical), Redpanda, Kafka Connect/Debezium e o Console. O conector Debezium (JSON) e o sink para o lakehouse são o roteiro de construção descrito no BUILD.
+**Status: 🟡 ambiente base.** O compose sobe Postgres (logical), Redpanda, Kafka Connect/Debezium e o Console. O conector Debezium (JSON) e o sink para o lakehouse são o próximo passo de implementação.
 
-- **[RUNBOOK.md](./RUNBOOK.md)** — subir o ambiente CDC e acessar Connect/Console.
-- **[BUILD.md](./BUILD.md)** — o roteiro: configurar o conector, snapshot + streaming, e o sink idempotente no lakehouse.
+Para subir o ambiente CDC e acessar Connect/Console, veja o **[RUNBOOK.md](./RUNBOOK.md)**.
+
+## ⚠️ Nota de produção: Schema Evolution e Data Contracts
+
+O Debezium lê o WAL do Postgres e serializa cada evento como JSON. Isso funciona enquanto o schema da origem não muda. Na prática, o time de engenharia de software **vai** alterar colunas, remover campos e mudar tipos — e sem proteção, o pipeline CDC quebra silenciosamente ou corrompe dados no destino.
+
+**O que pode quebrar e como proteger:**
+
+| Mudança na origem | Impacto no pipeline | Proteção |
+|---|---|---|
+| Renomear coluna (`cidade` → `municipio`) | Campo some dos eventos; Silver falha no schema enforcement | Schema Registry rejeita o evento antes de entrar no tópico |
+| Remover coluna | Dados históricos ficam inconsistentes com os novos | `mergeSchema=True` no Delta aceita a evolução; alerta de governança |
+| Mudar tipo (`VARCHAR → INT`) | Deserialização quebra nos consumers downstream | Schema Registry + compatibilidade `BACKWARD` bloqueia a mudança |
+| Adicionar coluna | Geralmente seguro, mas consumers que assumem schema fixo podem falhar | Schema Registry detecta; Delta aceita com `mergeSchema` |
+
+**Schema Registry** (Confluent Schema Registry, Redpanda Schema Registry) é o componente que resolve isso em arquiteturas Kafka: producers registram o schema (Avro, Protobuf ou JSON Schema) antes de publicar. O Registry garante compatibilidade entre versões — se a nova versão quebrar compatibilidade com consumers existentes, o publish é rejeitado.
+
+**Data Contracts** é o conceito mais amplo: um contrato formal entre o produtor de dados (time de software que mantém o OLTP) e os consumers (time de dados). Inclui schema, frequência de entrega, SLA de qualidade e processo de aprovação para mudanças. Ferramentas como [Schemata](https://github.com/ananthdurai/schemata) e [Datacontract CLI](https://datacontract.com/) formalizam esse processo.
+
+> Em produção: nenhum pipeline CDC é completo sem um Schema Registry ou processo equivalente de controle de mudanças na origem.
+
+---
 
 ## A dor que sobra
 

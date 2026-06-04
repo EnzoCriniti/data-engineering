@@ -19,7 +19,7 @@ A NuvemStore agora tem múltiplas fontes: o OLTP de pedidos, a API da transporta
 
 ## Status desta etapa
 
-**Ambiente/documentação.** O compose sobe o Airflow em modo `standalone` para estudo. Os DAGs reais estão roteirizados no [BUILD.md](./BUILD.md).
+**Ambiente base.** O compose sobe o Airflow em modo `standalone` para estudo. Os DAGs reais são o próximo passo de implementação.
 
 ## Conceitos
 
@@ -31,10 +31,9 @@ A NuvemStore agora tem múltiplas fontes: o OLTP de pedidos, a API da transporta
 
 > Aprofundamento técnico (scheduler, executors, sensors, XCom) em [`TECHNICAL.md`](./TECHNICAL.md).
 
-## Como executar e como foi construído
+## Como executar
 
-- **[RUNBOOK.md](./RUNBOOK.md)** — subir o Airflow e o BI opcional.
-- **[BUILD.md](./BUILD.md)** — o roteiro do DAG que coordena OLTP, API externa e dbt, com retries e backfill.
+Este README descreve o *porquê*. Para subir o Airflow e o BI opcional veja o **[RUNBOOK.md](./RUNBOOK.md)**.
 
 ## A dor que sobra
 

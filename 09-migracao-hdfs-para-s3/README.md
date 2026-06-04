@@ -29,10 +29,9 @@ A migração não pode ser "desliga HDFS e liga S3" de uma vez. Durante um perí
 
 ## Status e como executar
 
-**Status: 🟡 ambiente base.** O compose sobe HDFS, MinIO, Spark, Airflow, Trino e Metabase. Os jobs (`migrate_hdfs_to_s3.py`, `query_federada.py`, `tiering.py`) e os catálogos do Trino são o roteiro de construção descrito no BUILD.
+**Status: 🟡 ambiente base.** O compose sobe HDFS, MinIO, Spark, Airflow, Trino e Metabase. Os jobs (`migrate_hdfs_to_s3.py`, `query_federada.py`, `tiering.py`) e os catálogos do Trino são o próximo passo de implementação.
 
-- **[RUNBOOK.md](./RUNBOOK.md)** — subir o ambiente híbrido (HDFS + MinIO + Spark + Trino).
-- **[BUILD.md](./BUILD.md)** — o roteiro de migração: inventário, classificação por acesso, jobs de migração e federação, e reconciliação por partição.
+Para subir o ambiente híbrido (HDFS + MinIO + Spark + Trino), veja o **[RUNBOOK.md](./RUNBOOK.md)**.
 
 ## A dor que sobra
 

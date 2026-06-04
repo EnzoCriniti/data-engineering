@@ -1,4 +1,4 @@
-# Complemento técnico - Separacao física entre OLTP e warehouse
+# Complemento técnico — Separação física entre OLTP e warehouse
 
 ## O que esta etapa aprofunda
 
@@ -33,6 +33,11 @@ O job `migrate` materializa dados da origem no warehouse. Ele faz uma carga simp
 | BigQuery / Snowflake / Redshift | Warehouses gerenciados para escala maior. |
 | Lakehouse | Storage barato com tabelas transacionais sobre arquivos. |
 
-## Como isso conecta a trilha
+## Como isso aparece no projeto
 
 Esta etapa cria a base para falar de pipelines. Depois que existem origem e destino separados, surge a pergunta: como mover dados entre eles de forma confiável?
+
+## 📚 Referências
+
+- [Docker Compose Documentation](https://docs.docker.com/compose/) — referência para multi-container environments.
+- [PostgreSQL Connection Pooling (PgBouncer)](https://www.pgbouncer.org/) — alternativa de produção para isolar conexões entre workloads.

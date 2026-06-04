@@ -16,7 +16,7 @@ A NuvemStore terceiriza parte das entregas para a Transportadora X, que expõe u
 
 ## Status desta etapa
 
-**Ambiente base/documentação.** O compose sobe uma API fake da transportadora e um Postgres de warehouse com schema `staging`. O extractor batch (paginação, controle incremental, idempotência) está roteirizado no [BUILD.md](./BUILD.md).
+**Ambiente base.** O compose sobe uma API fake da transportadora e um Postgres de warehouse com schema `staging`. O extractor batch (paginação, controle incremental, idempotência) é o próximo passo de implementação.
 
 ## Conceitos
 
@@ -30,10 +30,9 @@ A NuvemStore terceiriza parte das entregas para a Transportadora X, que expõe u
 
 > Aprofundamento técnico (contratos de API, retry/backoff, paginação) em [`TECHNICAL.md`](./TECHNICAL.md).
 
-## Como executar e como foi construído
+## Como executar
 
-- **[RUNBOOK.md](./RUNBOOK.md)** — subir o ambiente base e consultar a API fake.
-- **[BUILD.md](./BUILD.md)** — o roteiro do extractor incremental e o plano de integração com o dbt.
+Este README descreve o *porquê*. Para subir o ambiente base e consultar a API fake — comandos, saída esperada e validações — veja o **[RUNBOOK.md](./RUNBOOK.md)**.
 
 ## A dor que sobra
 

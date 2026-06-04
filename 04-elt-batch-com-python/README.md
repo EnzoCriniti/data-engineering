@@ -40,10 +40,9 @@ O fluxo é `OLTP (Postgres) → extração Python → raw (DuckDB) → marts (SQ
 
 O Metabase sobe separado do fluxo principal, para não esconder as etapas do pipeline. Neste capítulo o warehouse é DuckDB; a conexão ao BI usa o driver community de DuckDB. A partir do cap. 05 a saída analítica passa a ser materializada em Postgres, facilitando a conexão nativa do Metabase. Detalhes no [RUNBOOK](./RUNBOOK.md).
 
-## Como executar e como foi construído
+## Como executar
 
-- **[RUNBOOK.md](./RUNBOOK.md)** — subir e usar o pipeline já pronto (comandos, saída esperada, validações).
-- **[BUILD.md](./BUILD.md)** — o passo a passo de construção do extractor, dos marts e do empacotamento.
+Este README descreve o *porquê*. Para subir e usar o pipeline — comandos, saída esperada e validações — veja o **[RUNBOOK.md](./RUNBOOK.md)**.
 
 ## A dor que sobra
 

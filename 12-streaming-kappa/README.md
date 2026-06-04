@@ -33,10 +33,42 @@ Sobre ele se constroem o producer (gera os eventos de GPS), o processor (agrega 
 
 ## Status e como executar
 
-**Status: 🟡 ambiente base.** O compose sobe Redpanda e o Console. O producer, o processor, os tópicos e os sinks são o roteiro de construção descrito no BUILD.
+**Status: 🟡 ambiente base.** O compose sobe Redpanda e o Console. O producer, o processor, os tópicos e os sinks são o próximo passo de implementação.
 
-- **[RUNBOOK.md](./RUNBOOK.md)** — subir o ambiente de streaming e acessar o Console.
-- **[BUILD.md](./BUILD.md)** — o roteiro: producer de GPS, processamento por janelas com event time/watermark, e persistência das métricas.
+Para subir o ambiente de streaming e acessar o Console, veja o **[RUNBOOK.md](./RUNBOOK.md)**.
+
+## ⚠️ Nota de produção: Para onde vão as métricas do streaming?
+
+O README menciona que "sinks persistem as métricas" — mas **onde** persistir é uma decisão arquitetural crítica que muda tudo.
+
+**Object storage (Delta Lake / S3)** é o sink natural do lakehouse. Mas tem um problema: o Delta Lake tem latência de minutos entre a escrita e a leitura — microbatches que consolidam arquivos Parquet, checkpoint do `_delta_log`, invalidação de cache do Trino. Para um painel que atualiza a cada segundo mostrando entregas ativas por região, isso não serve.
+
+**O padrão correto para métricas operacionais de baixa latência:**
+
+```
+Redpanda (eventos de GPS)
+        ↓
+  Processador de stream (Flink/PySpark Streaming)
+        ↓
+  ┌─────────────────────────────────────────────┐
+  │ Sink 1: Redis / Apache Pinot / Druid        │  ← dashboard operacional (< 1s)
+  │ Sink 2: Delta Lake (via microbatch)         │  ← histórico analítico (minutos)
+  └─────────────────────────────────────────────┘
+```
+
+| Destino | Latência de leitura | Caso de uso | Quando usar |
+|---|---|---|---|
+| **Redis** (sorted sets) | < 1ms | Rankings, contadores, estado atual | Métricas simples, muitas leituras por segundo |
+| **Apache Pinot** | < 100ms | OLAP sobre stream, queries SQL | Dashboards analíticos sobre dados recentes |
+| **Apache Druid** | < 100ms | Time-series de alta cardinalidade | Métricas de séries temporais com granularidade fina |
+| **Delta Lake** | minutos | Histórico, auditoria, reprocessamento | Análise exploratória, não dashboard |
+| **Postgres** | < 10ms | Serving layer com índice | Quando o volume de eventos é gerenciável |
+
+Nesta plataforma, as métricas de GPS (velocidade média, entregas ativas por região) iriam para **Redis** ou **Pinot** para o painel operacional de Operações, e adicionalmente para o **Delta Lake** para alimentar a análise histórica de logística e treino de modelos (cap. 13).
+
+> A escolha do sink é a decisão de design mais importante do streaming — e ela é ditada pela latência de leitura exigida, não pelo volume de dados.
+
+---
 
 ## A dor que sobra
 

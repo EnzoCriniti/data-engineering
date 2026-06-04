@@ -32,10 +32,9 @@ O padrão de dados é **schema-on-read**: o JSON cru entra como está e o schema
 
 ## Status e como executar
 
-**Status: 🟡 ambiente base.** O compose sobe HDFS, Spark e o metastore prontos para receber jobs; a ingestão e a curadoria (`ingest_raw.py`, `build_curated.py`) são o roteiro de construção descrito no BUILD.
+**Status: 🟡 ambiente base.** O compose sobe HDFS, Spark e o metastore prontos para receber jobs; a ingestão e a curadoria (`ingest_raw.py`, `build_curated.py`) são o próximo passo de implementação.
 
-- **[RUNBOOK.md](./RUNBOOK.md)** — subir o lake (HDFS + Spark + metastore) e acessar as UIs.
-- **[BUILD.md](./BUILD.md)** — o roteiro de implementação dos jobs Spark: JSON cru → Parquet curado, registro no metastore e o plano de migração desde o warehouse.
+Para subir o lake (HDFS + Spark + metastore) e acessar as UIs, veja o **[RUNBOOK.md](./RUNBOOK.md)**.
 
 ## A dor que sobra
 
