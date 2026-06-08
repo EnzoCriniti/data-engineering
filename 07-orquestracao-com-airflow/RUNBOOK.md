@@ -1,6 +1,6 @@
 # Runbook — Capítulo 07: orquestração com Airflow
 
-> Guia rápido para **subir e usar**. Status atual: **ambiente base** — os DAGs reais ainda serão implementados (ver [BUILD.md](./BUILD.md)).
+> Guia rápido para **subir e usar**. Status atual: **ambiente base** — os DAGs reais ainda serão implementados (ver [GUIDE.md](./GUIDE.md) para o passo-a-passo e [SOLUTION.md](./SOLUTION.md) para o código).
 
 ## O que este capítulo entrega hoje
 
@@ -35,9 +35,9 @@ docker compose --profile bi up -d metabase
 ```bash
 # colocar os DAGs em airflow/dags/ (já montado no container)
 docker compose exec airflow airflow dags list
-docker compose exec airflow airflow dags trigger pipeline_nuvemstore
+docker compose exec airflow airflow dags trigger nuvemstore_daily
 # backfill de um intervalo
-docker compose exec airflow airflow dags backfill pipeline_nuvemstore -s 2024-01-01 -e 2024-01-07
+docker compose exec airflow airflow dags backfill nuvemstore_daily -s 2024-01-01 -e 2024-01-07
 ```
 
 **Validação:** uma execução orquestrada deve produzir os mesmos marts que a execução manual dos capítulos anteriores.

@@ -53,9 +53,4 @@ Evite quando consultas analíticas já afetam o produto, quando ha muitos usuár
 
 ## Como isso aparece no projeto
 
-Esta etapa cria a dor operacional que justifica a etapa seguinte: separar o warehouse da origem. Sem sentir essa disputa, a separacao parece excesso de arquitetura.
-
-## 📚 Referências
-
-- [PostgreSQL Schemas](https://www.postgresql.org/docs/current/ddl-schemas.html) — documentação oficial sobre separação lógica com schemas.
-- [VACUUM and Autovacuum](https://www.postgresql.org/docs/current/routine-vacuuming.html) — como manutenção automática pode competir com queries analíticas.
+Esta etapa cria a dor operacional que justifica a etapa seguinte: separar o warehouse da origem. Sem sentir essa disputa, a separacao parece excesso de arquitetu

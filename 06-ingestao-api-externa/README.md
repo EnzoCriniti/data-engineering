@@ -36,4 +36,4 @@ Este README descreve o *porquê*. Para subir o ambiente base e consultar a API f
 
 ## A dor que sobra
 
-Agora a plataforma tem OLTP interno, dbt e uma API externa batch. Rodar tudo manualmente, na ordem certa, com retries, fica frágil. Essa dor leva ao [capítulo 07](../07-orquestracao-com-airflow): orquestração com Airflow.
+Agora a plataforma tem OLTP interno, dbt e uma API externa batch. Rodar tudo manualmente, na ordem certa, com retries, fica frágil. Essa dor leva ao [capítulo 07](../07-orquestra

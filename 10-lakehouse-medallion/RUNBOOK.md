@@ -1,6 +1,6 @@
 # Runbook — Capítulo 10: Lakehouse + Medallion
 
-> Guia rápido para **subir e usar**. Status atual: **ambiente base** — MinIO, Spark, Trino, Airflow, metastore e Metabase sobem prontos; os jobs Delta (bronze/silver/gold) ainda serão implementados (ver [BUILD.md](./BUILD.md)).
+> Guia rápido para **subir e usar**. Status atual: **ambiente base** — MinIO, Spark, Trino, Airflow, metastore e Metabase sobem prontos; os jobs Delta (bronze/silver/gold) ainda serão implementados (ver [GUIDE.md](./GUIDE.md) para o passo-a-passo e [SOLUTION.md](./SOLUTION.md) para o código).
 
 ## O que este capítulo entrega hoje
 
@@ -29,16 +29,16 @@ Airflow:        http://localhost:8080
 ## Quando os jobs estiverem implementados
 
 ```bash
-docker compose exec spark-master spark-submit /opt/jobs/bronze.py
-docker compose exec spark-master spark-submit /opt/jobs/silver.py
-docker compose exec spark-master spark-submit /opt/jobs/gold.py
+docker compose run spark-submit spark-submit /app/jobs/bronze_ingest.py
+docker compose run spark-submit spark-submit /app/jobs/silver_transform.py
+docker compose run spark-submit spark-submit /app/jobs/gold_marts.py
 ```
 
-Consultar as camadas via Trino:
+Consultar as camadas via Trino (ou `spark-sql`):
 
 ```sql
-SELECT count(*) FROM lakehouse.bronze.eventos;
-SELECT * FROM lakehouse.gold.receita_diaria LIMIT 10;
+SELECT count(*) FROM delta.`s3a://datalake/bronze/entregas`;
+SELECT * FROM delta.`s3a://datalake/gold/resumo_entregas` LIMIT 10;
 ```
 
 **Validação:** as métricas da camada gold devem ser equivalentes aos marts do warehouse dos capítulos anteriores antes de apontar o BI para o lakehouse.
@@ -52,4 +52,4 @@ docker compose up -d
 
 ## Próximo passo
 
-[Capítulo 11](../11-cdc-com-debezium): capturar mudanças do banco em tempo quase real (CDC) para alimentar o lakehouse sem recarregar tudo.
+[Capítulo 11](../11-cdc-com-debezium): capturar mudanças do banco em tempo 

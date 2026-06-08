@@ -28,23 +28,4 @@ tempo     -> feature_ts (quando a feature foi calculada)
 
 **Training vs scoring dataset.** O treino usa exemplos rotulados do passado; o scoring pontua casos novos sem label. As features precisam ser computáveis em ambos os momentos — features disponíveis só no histórico inviabilizam o scoring.
 
-**Label leakage.** O erro clássico: incluir na feature uma informação que só existe *depois* de saber o resultado (ex.: `status_pagamento` = "estornado por fraude"). O modelo fica ótimo no treino e inútil na produção.
-
-**Point-in-time correctness.** Cada feature deve refletir o que se sabia *no momento do pagamento*, não o estado atual. "Pedidos do cliente nos últimos 30 dias" tem que ser relativo ao `feature_ts`, não a hoje. O `feature_ts` é o que torna isso auditável.
-
-**Batch vs real-time features.** Algumas features vêm de agregações batch (histórico de 30d); outras de streaming (velocidade média 5min). Combiná-las exige cuidado de tempo e disponibilidade.
-
-**Drift.** Em produção, a distribuição das features muda com o tempo. Monitorar drift é o que mantém o modelo confiável depois do deploy.
-
-> Detalhamento técnico em [`TECHNICAL.md`](./TECHNICAL.md).
-
-## Status e como executar
-
-**Status: 🟡 ambiente base / documentação.** O compose sobe um Postgres simples como base de features local (`ml.fraude_pagamento_features`). A construção da feature table a partir das fontes é o roteiro descrito no BUILD; no futuro pode ser materializada no lakehouse ou numa feature store dedicada.
-
-- **[RUNBOOK.md](./RUNBOOK.md)** — subir a base de features e inspecionar o schema.
-- **[BUILD.md](./BUILD.md)** — o roteiro: montar as features a partir de gold/CDC/streaming, com point-in-time correctness e sem leakage.
-
-## A dor que sobra
-
-Com a base de ML preparada, a trilha fecha mostrando que a plataforma não serve apenas dashboards — ela sustenta produtos analíticos avançados, com dados confiáveis, históricos e em tempo real.
+**Label leakage.** O e

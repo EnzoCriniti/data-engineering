@@ -1,6 +1,6 @@
 # Runbook — Capítulo 06: ingestão batch de API externa
 
-> Guia rápido para **subir e usar**. Status atual: **ambiente base** — o extractor ainda será implementado (ver [BUILD.md](./BUILD.md)).
+> Guia rápido para **subir e usar**. Status atual: **ambiente base** — o extractor ainda será implementado (ver [GUIDE.md](./GUIDE.md) para o passo-a-passo e [SOLUTION.md](./SOLUTION.md) para o código).
 
 ## O que este capítulo entrega hoje
 
@@ -9,7 +9,7 @@ Uma API fake da transportadora e um Postgres de warehouse com schema `staging`, 
 ## Pré-requisitos
 
 - Docker e Docker Compose.
-- Porta `8088` livre para a API fake.
+- Porta `8000` livre para a API fake.
 
 ## Subir o ambiente base
 
@@ -21,7 +21,7 @@ docker compose up -d
 ## Consultar a API fake
 
 ```bash
-curl http://localhost:8088/entregas.json
+curl http://localhost:8000/entregas.json
 ```
 
 Você verá o payload de entregas (status, previsão, ocorrências, `atualizado_em`) que o extractor vai consumir.

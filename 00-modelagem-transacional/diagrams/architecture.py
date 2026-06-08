@@ -23,9 +23,4 @@ with Diagram(
         entregador = PostgreSQL("entregador")
 
         categoria >> Edge(label="1:N") >> produto
-        cliente >> Edge(label="1:N") >> pedido
-        pedido >> Edge(label="1:N") >> item
-        produto >> Edge(label="1:N") >> item
-        pedido >> Edge(label="1:1") >> pagamento
-        pedido >> Edge(label="1:1") >> entrega
-        entregador >> Edge(label="1:N") >> entrega
+      

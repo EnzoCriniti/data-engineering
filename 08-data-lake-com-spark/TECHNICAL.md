@@ -58,10 +58,4 @@ Evite Spark para tarefas pequenas. O overhead de cluster, configuracao e shuffle
 
 ## Como isso aparece no projeto
 
-O capítulo 08 usa HDFS como landing zone on-prem, Spark para processar JSON e Parquet como saída curada. O objetivo e mostrar a mudança de paradigma: de tabelas de banco para arquivos distribuidos.
-
-## 📚 Referências
-
-- [Apache Spark Documentation](https://spark.apache.org/docs/latest/) — referência oficial com guias de SQL, DataFrames e tuning.
-- [Parquet Format Specification](https://parquet.apache.org/documentation/latest/) — especificação técnica do formato colunar.
-- [HDFS Architecture Guide](https://hadoop.apache.org/docs/current/hadoop-project-dist/hadoop-hdfs/HdfsDesign.html) — design do HDFS com blocos, replicação e namenode.
+O capítulo 08 usa HDFS como landing zone on-prem, Spark para processar JSON e Parquet como saída curada. O objetivo e mostrar a mudança de paradigma: de tabelas de banco para arquivos distribuidos

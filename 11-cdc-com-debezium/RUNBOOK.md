@@ -1,6 +1,6 @@
 # Runbook — Capítulo 11: CDC com Debezium
 
-> Guia rápido para **subir e usar**. Status atual: **ambiente base** — Postgres (logical), Redpanda, Kafka Connect/Debezium e Console sobem prontos; o conector e o sink ainda serão implementados (ver [BUILD.md](./BUILD.md)).
+> Guia rápido para **subir e usar**. Status atual: **ambiente base** — Postgres (logical), Redpanda, Kafka Connect/Debezium e Console sobem prontos; o conector e o sink ainda serão implementados (ver [GUIDE.md](./GUIDE.md) para o passo-a-passo e [SOLUTION.md](./SOLUTION.md) para o código).
 
 ## O que este capítulo entrega hoje
 
@@ -38,13 +38,13 @@ curl http://localhost:8083/connectors
 ## Quando o conector estiver implementado
 
 ```bash
-# registrar o conector Debezium (JSON do conector em config/)
+# registrar o conector Debezium (JSON do conector em connect/)
 curl -X POST -H "Content-Type: application/json" \
-  --data @config/debezium-postgres.json \
+  --data @connect/register-postgres.json \
   http://localhost:8083/connectors
 
 # status do conector
-curl http://localhost:8083/connectors/nuvemstore-cdc/status
+curl http://localhost:8083/connectors/nuvemstore-connector/status
 ```
 
 **Validação:** inserts, updates e deletes na origem devem aparecer como eventos nos tópicos (visíveis no Console) e, depois, refletir no lakehouse via sink idempotente.
@@ -58,4 +58,4 @@ docker compose up -d
 
 ## Próximo passo
 
-[Capítulo 12](../12-streaming-kappa): processar esses eventos com janelas e estado para métricas ao vivo.
+[Capítulo 12](../12-streaming-kappa): processar esses eventos com janelas e estado para métricas a

@@ -53,10 +53,4 @@ Evite usar dbt para processamento pesado fora do banco, ingestao de APIs, stream
 
 ## Como isso aparece no projeto
 
-O capítulo 05 reaproveita a dor do capítulo 04: SQL manual demais. A mudança arquitetural e colocar transformacoes em modelos com dependencias explicitas, testes e documentacao gerada.
-
-## 📚 Referências
-
-- [dbt Documentation](https://docs.getdbt.com/) — referência oficial com guias de materialização, testes e packages.
-- [dbt Best Practices](https://docs.getdbt.com/best-practices) — convenções de projeto recomendadas pela dbt Labs.
-- [SQLMesh Documentation](https://sqlmesh.readthedocs.io/) — alternativa moderna ao dbt com foco em ambientes e planejamento.
+O capítulo 05 reaproveita a dor do capítulo 04: SQL manual demais. A mudança arquitetural e colocar transformacoes em modelos com dependencias explicitas, testes e documentacao gera

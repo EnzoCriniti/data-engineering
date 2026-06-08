@@ -1,6 +1,6 @@
 # Runbook — Capítulo 12: Streaming Kappa
 
-> Guia rápido para **subir e usar**. Status atual: **ambiente base** — Redpanda e o Console sobem prontos; producer, processor e sinks ainda serão implementados (ver [BUILD.md](./BUILD.md)).
+> Guia rápido para **subir e usar**. Status atual: **ambiente base** — Redpanda e o Console sobem prontos; producer, processor e sinks ainda serão implementados (ver [GUIDE.md](./GUIDE.md) para o passo-a-passo e [SOLUTION.md](./SOLUTION.md) para o código).
 
 ## O que este capítulo entrega hoje
 
@@ -39,9 +39,9 @@ docker compose exec redpanda rpk topic create gps-entregadores
 ```bash
 # producer de eventos de GPS
 docker compose exec redpanda rpk topic create gps-entregadores
-python producer/gps_producer.py
+python simulators/gps_producer.py
 # processor de janelas (event time + watermark)
-python processor/janelas.py
+docker compose run spark-submit spark-submit /app/jobs/streaming_gps.py
 ```
 
 **Validação:** os agregados do streaming (ex.: velocidade média por janela) devem bater com uma recomputação batch da mesma janela; o batch fica como auditoria/reprocessamento, não como fonte de baixa latência.
@@ -55,4 +55,4 @@ docker compose up -d
 
 ## Próximo passo
 
-[Capítulo 13](../13-base-ml-fraude): preparar uma base de features combinando os sinais batch, CDC e streaming para um modelo de fraude.
+[Capítulo 13](../13-base-ml-fraude): preparar uma base de features combinando os sinais bat

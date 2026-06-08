@@ -1,6 +1,6 @@
 # Runbook — Capítulo 09: migração de HDFS para S3
 
-> Guia rápido para **subir e usar**. Status atual: **ambiente base** — HDFS, MinIO, Spark, Trino, Airflow e Metabase sobem prontos; os jobs de migração e federação ainda serão implementados (ver [BUILD.md](./BUILD.md)).
+> Guia rápido para **subir e usar**. Status atual: **ambiente base** — HDFS, MinIO, Spark, Trino, Airflow e Metabase sobem prontos; os jobs de migração e federação ainda serão implementados (ver [GUIDE.md](./GUIDE.md) para o passo-a-passo e [SOLUTION.md](./SOLUTION.md) para o código).
 
 ## O que este capítulo entrega hoje
 
@@ -40,23 +40,21 @@ docker compose exec minio mc ls local/
 ## Quando os jobs estiverem implementados
 
 ```bash
-# migrar partições frias de HDFS para S3/MinIO
-docker compose exec spark-master spark-submit /opt/jobs/migrate_hdfs_to_s3.py
-# consulta federada cobrindo HDFS + S3
-docker compose exec spark-master spark-submit /opt/jobs/query_federada.py
-# aplicar política de tiering quente/frio
-docker compose exec spark-master spark-submit /opt/jobs/tiering.py
+# migrar partições frias de HDFS para S3/MinIO (job Spark)
+docker compose run spark-submit spark-submit /app/jobs/migrate_hdfs_to_s3.py
 ```
 
-**Validação:** as contagens por partição devem bater antes e depois da migração (reconciliação), e o Trino deve retornar o mesmo resultado consultando a partição esteja ela em HDFS ou em S3.
+A **consulta federada** (HDFS + S3 ao mesmo tempo) não é um job Spark: é feita pelo Trino, usando o catálogo `trino/catalog/hive.properties`. Com a partição migrada, o mesmo `SELECT` continua respondendo esteja o dado em HDFS ou em S3:
+
+```sql
+SELECT count(*) FROM hive.default.entregas;   -- via Trino, transparente ao usuário
+```
+
+**Validação:** as contagens por partição devem bater antes e depois da migração (reconciliação — o próprio `migrate_hdfs_to_s3.py` imprime essa checagem), e o Trino deve retornar o mesmo resultado independentemente de onde a partição está.
 
 ## Recomeçar do zero
 
 ```bash
 docker compose down -v
 docker compose up -d
-```
-
-## Próximo passo
-
-[Capítulo 10](../10-lakehouse-medallion): dar ao lake em object storage as garantias transacionais do warehouse, com Delta/Iceberg e a arquitetura Medallion.
+``

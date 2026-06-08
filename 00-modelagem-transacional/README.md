@@ -108,4 +108,4 @@ Este README descreve o *porquê* do modelo. Para subir e usar a origem — coman
 
 ## A dor que sobra
 
-O modelo é limpo para escrever, mas responder qualquer pergunta analítica exige joins pesados e lentos — inviável em escala e hostil para quem só quer um número. **Precisamos de um modelo desenhado para ler.** → [Capítulo 01: Modelagem dimensional](../01-modelagem-dimensional).
+O modelo é limpo pa

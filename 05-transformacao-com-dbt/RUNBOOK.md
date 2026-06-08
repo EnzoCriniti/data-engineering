@@ -1,6 +1,6 @@
 # Runbook — Capítulo 05: transformação com dbt
 
-> Guia rápido para **subir e usar** o ambiente. Status atual: **ambiente base** — o projeto dbt ainda será implementado (ver [BUILD.md](./BUILD.md)). Os comandos de `dbt` abaixo ficam prontos para quando os modelos existirem.
+> Guia rápido para **subir e usar** o ambiente. Status atual: **ambiente base** — o projeto dbt ainda será implementado (ver [GUIDE.md](./GUIDE.md) para o passo-a-passo e [SOLUTION.md](./SOLUTION.md) para o código). Os comandos de `dbt` abaixo ficam prontos para quando os modelos existirem.
 
 ## O que este capítulo entrega hoje
 

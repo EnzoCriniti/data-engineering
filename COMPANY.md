@@ -63,4 +63,4 @@ Esta é a tabela que **guia as decisões de modelagem dos capítulos 00 e 01**: 
 ## Convenções
 
 - Empresa, nomes e dados são **fictícios**; os geradores de cada capítulo produzem dados sintéticos (Faker) coerentes com este domínio.
-- Português nos nomes de negócio; inglês onde for convenção técnica (ex: `fct_`, `dim_`, `bronze/silver/gold`).
+- Português nos nomes de negócio; inglês onde for 

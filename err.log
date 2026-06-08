@@ -1,7 +1,0 @@
-warning: CRLF will be replaced by LF in .github/workflows/ci.yml.
-The file will have its original line endings in your working directory
-warning: CRLF will be replaced by LF in .gitignore.
-The file will have its original line endings in your working directory
-error: open("00-modelagem-transacional/BUILD.md"): No such file or directory
-error: unable to index file '00-modelagem-transacional/BUILD.md'
-fatal: updating files failed

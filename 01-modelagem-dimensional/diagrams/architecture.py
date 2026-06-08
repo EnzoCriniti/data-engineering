@@ -22,4 +22,4 @@ with Diagram(
         dim_tempo >> Edge(label="sk") >> fato
         dim_cliente >> Edge(label="sk") >> fato
         dim_produto >> Edge(label="sk") >> fato
-        dim_loja >> Edge(label="sk") >> fato
+        dim_loja >> E

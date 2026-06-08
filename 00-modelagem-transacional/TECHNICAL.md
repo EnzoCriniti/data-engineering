@@ -49,8 +49,4 @@ Evite usar o OLTP como motor analítico pesado. Queries grandes competem com o c
 
 O arquivo `ddl/schema.sql` define a origem canônica da NuvemStore. O seeder popula essa origem com dados sintéticos e os capítulos seguintes tratam esse Postgres como sistema de produção a ser protegido.
 
-## 📚 Referências
-
-- [PostgreSQL Official Documentation](https://www.postgresql.org/docs/current/) — referência completa de tipos, constraints, MVCC e WAL.
-- [Codd's Original Paper (1970)](https://www.seas.upenn.edu/~zives/03f/cis550/codd.pdf) — "A Relational Model of Data for Large Shared Data Banks".
-- [Use The Index, Luke](https://use-the-index-luke.com/) — guia prático de indexação e performance em bancos relacionais.
+## 📚 Refer
