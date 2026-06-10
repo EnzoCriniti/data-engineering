@@ -1,0 +1,70 @@
+// =====================================================================
+// NuvemStore — Modelo dimensional (OLAP / star schema) — Cap. 01
+// =====================================================================
+// Modelo as-code do warehouse analítico (Kimball, star schema).
+// Cole em https://dbdiagram.io para ver o ERD, ou gere o DDL com:
+//   npx @dbml/cli@latest sql nuvemstore_dw.dbml --postgres
+// Contraste proposital com o OLTP (cap 00): aqui DESnormalizamos
+// (categoria embutida em dim_produto) e usamos surrogate keys + SCD2.
+// =====================================================================
+
+Project nuvemstore_dw {
+  database_type: 'PostgreSQL'
+  Note: 'Warehouse dimensional da NuvemStore. Otimizado para leitura (OLAP). Grão da fato: um item vendido em uma venda.'
+}
+
+Table dim_tempo {
+  sk_tempo  integer [pk]
+  data      date [not null, unique]
+  mes       integer [not null]
+  trimestre integer [not null]
+  ano       integer [not null]
+  Note: 'Dimensão de calendário. sk_tempo costuma ser AAAAMMDD (chave inteligível).'
+}
+
+Table dim_cliente {
+  sk_cliente integer [pk, increment]
+  id_natural integer [not null, note: 'cliente_id da origem (OLTP)']
+  nome       varchar(100) [not null]
+  cidade     varchar(100) [not null]
+  valido_de  date [not null]
+  valido_ate date
+  atual      boolean [not null, default: true]
+  Note: 'SCD Tipo 2: cada mudança (ex.: troca de cidade) cria nova versão. id_natural NÃO é único — pode ter várias versões.'
+
+  Indexes {
+    id_natural
+    (id_natural, atual)
+  }
+}
+
+Table dim_produto {
+  sk_produto integer [pk, increment]
+  nome       varchar(120) [not null]
+  categoria  varchar(80) [not null]
+  Note: 'DESnormalizada de propósito: categoria embutida (sem tabela separada). Menos joins na análise.'
+}
+
+Table dim_loja {
+  sk_loja integer [pk, increment]
+  nome    varchar(100) [not null]
+  regiao  varchar(60) [not null]
+}
+
+Table fct_vendas {
+  sk_venda    integer [pk, increment]
+  sk_tempo    integer [not null, ref: > dim_tempo.sk_tempo]
+  sk_cliente  integer [not null, ref: > dim_cliente.sk_cliente]
+  sk_produto  integer [not null, ref: > dim_produto.sk_produto]
+  sk_loja     integer [not null, ref: > dim_loja.sk_loja]
+  quantidade  integer [not null]
+  valor_total "numeric(12,2)" [not null]
+  Note: 'Tabela fato. Métricas (quantidade, valor_total) + FKs para as dimensões. Grão: um item vendido em uma venda.'
+
+  Indexes {
+    sk_tempo
+    sk_cliente
+    sk_produto
+    sk_loja
+  }
+}

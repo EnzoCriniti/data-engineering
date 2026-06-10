@@ -32,3 +32,4 @@ minio-data/
 
 # Diagramas: versionar os PNGs gerados (NÃO ignorar)
 !**/diagrams/*.png
+*.pyc

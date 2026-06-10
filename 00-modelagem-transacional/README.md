@@ -79,6 +79,24 @@ erDiagram
 As três entidades extras — **pagamento**, **entrega** e **entregador** — existem para suportar capítulos futuros: `pagamento` (com `atualizado_em`) é a fonte do **CDC de fraude** (cap. 11), e `entrega`/`entregador` ancoram os **eventos de GPS** do streaming (cap. 12). Modelar a origem já contemplando isso é o que diferencia uma plataforma planejada de uma remendada.
 
 > Há também um ERD gerado por código em [`diagrams/architecture.py`](./diagrams/architecture.py), consistente com os demais diagramas do repo.
+>
+> O mesmo modelo também está descrito **as-code** em [`modeling/nuvemstore_oltp.dbml`](./modeling/nuvemstore_oltp.dbml) (DBML). Cole o arquivo em [dbdiagram.io](https://dbdiagram.io) para ver o ERD renderizado, ou rode `npx @dbml/cli@latest sql modeling/nuvemstore_oltp.dbml --postgres` para gerar o DDL a partir dele — o diagrama e o `schema.sql` partem da mesma fonte e não divergem.
+
+## O seeder — a aplicação que dá vida à origem
+
+O schema acima é só o esqueleto. Quem o preenche é o **seeder** (`seed/seed.py`): ele **simula a aplicação da NuvemStore**, gerando clientes, produtos, pedidos, pagamentos e entregas como se o site estivesse operando. Sem ele, a plataforma inteira (warehouse, lake, streaming, ML) não teria dado para mover — por isso o seeder é um **componente de primeira classe** desta trilha, não um detalhe de setup. Todos os capítulos seguintes consomem o que ele produz; eles só dizem "a aplicação continua gerando pedidos" e voltam aqui.
+
+O que o seeder faz de propósito:
+
+- **Gera dados coerentes, não aleatórios soltos.** Um pedido `pago` tem pagamento `pago` e pode ter entrega; um `cancelado` tem pagamento `recusado` e nenhuma entrega. As relações respeitam as FKs e os `CHECK` do schema.
+- **É determinístico e idempotente.** A seed fixa (`42`) e o `SEED_RESET=true` garantem que rodar duas vezes produz exatamente o mesmo banco — reprodutibilidade é pré-requisito para qualquer pipeline confiável.
+- **É parametrizável por volume.** O volume é controlado por variáveis de ambiente (`SEED_CLIENTES`, `SEED_PEDIDOS`), porque capítulos diferentes têm necessidades diferentes (ver abaixo).
+
+**Cenários e o caso especial da fraude.** Para a maior parte da trilha, o volume default (250 clientes / 1.200 pedidos) basta — é rápido de subir e fácil de inspecionar. O **capítulo 13 (ML de fraude)** é a exceção: um detector precisa de massa suficiente na classe minoritária, então ele sobe o seeder em **modo de volume maior** (dezenas de milhares de pedidos) e ativa a **injeção de comportamentos suspeitos** (`SEED_FRAUDE=true`): rajada de pagamentos do mesmo cliente em minutos, ticket muito acima do histórico do cliente, e método de risco em cliente recém-criado.
+
+O detalhe que faz o cap 13 ter sentido: **o seeder não rotula fraude na hora**. Ele gera o *comportamento*; a confirmação (`status` final / chargeback) só aparece **com atraso** — exatamente como no mundo real, onde o banco confirma a fraude semanas depois. Isso é o que torna possível ensinar *point-in-time correctness* e evitar *label leakage*: no instante do pagamento, o label ainda não existe. Se o seeder marcasse `fraude=true` direto na linha, não haveria feature engineering — o modelo "leria a resposta". (Ver o GUIDE do [cap 13](../13-base-ml-fraude/GUIDE.md).)
+
+> Hoje o seeder roda **on-demand** (um job que popula e encerra). Em capítulos que precisam de fluxo contínuo — CDC (cap 11) e streaming (cap 12) — ele opera em modo de geração incremental, emitindo novos pedidos/eventos ao longo do tempo em vez de uma carga única.
 
 ## Conceitos
 

@@ -28,7 +28,7 @@ A NuvemStore terceiriza parte das entregas para a Transportadora X, que expõe u
 
 **Staging antes de transformar.** O dado externo aterrissa cru em `staging.transportadora_entregas`; só depois o dbt cruza com o pedido interno. Isola "trazer" de "dar sentido".
 
-> Aprofundamento técnico (contratos de API, retry/backoff, paginação) em [`TECHNICAL.md`](./TECHNICAL.md).
+> O **contrato completo da API** — endpoints, paginação por cursor, rate limit, `updated_since`, schema drift, `event_ts` vs `updated_at` e o contrato de ingestão passo a passo — está em [`API_SPEC.md`](./API_SPEC.md). Aprofundamento técnico (retry/backoff, alternativas como Airbyte/Fivetran) em [`TECHNICAL.md`](./TECHNICAL.md).
 
 ## Como executar
 

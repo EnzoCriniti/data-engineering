@@ -1,0 +1,87 @@
+// =====================================================================
+// NuvemStore — Modelo transacional (OLTP) — Cap. 00
+// =====================================================================
+// Modelo as-code do banco de origem normalizado (3FN).
+// Cole em https://dbdiagram.io para ver o ERD, ou gere o DDL com:
+//   npx @dbml/cli@latest sql nuvemstore_oltp.dbml --postgres
+// Fonte única: este arquivo e ddl/schema.sql descrevem o mesmo schema.
+// =====================================================================
+
+Project nuvemstore_oltp {
+  database_type: 'PostgreSQL'
+  Note: 'Origem transacional da NuvemStore. Otimizada para escrita (OLTP), normalizada para eliminar redundância.'
+}
+
+Table cliente {
+  cliente_id integer [pk, increment]
+  nome       varchar(100) [not null]
+  cidade     varchar(100) [not null]
+  email      varchar(150) [not null, unique]
+  Note: 'Cliente do e-commerce. email único.'
+}
+
+Table categoria {
+  categoria_id integer [pk, increment]
+  nome         varchar(80) [not null, unique]
+}
+
+Table produto {
+  produto_id   integer [pk, increment]
+  nome         varchar(120) [not null]
+  preco        "numeric(10,2)" [not null, note: 'CHECK preco > 0']
+  categoria_id integer [not null, ref: > categoria.categoria_id]
+}
+
+Table entregador {
+  entregador_id integer [pk, increment]
+  nome          varchar(100) [not null]
+  veiculo       varchar(40) [not null, note: "CHECK veiculo IN ('moto','van','bicicleta')"]
+}
+
+Table pedido {
+  pedido_id   integer [pk, increment]
+  cliente_id  integer [not null, ref: > cliente.cliente_id]
+  data_pedido timestamp [not null, default: `now()`]
+  status      varchar(20) [not null, default: 'pendente', note: "CHECK status IN ('pendente','pago','cancelado')"]
+
+  Indexes {
+    cliente_id
+    data_pedido
+  }
+}
+
+Table item_pedido {
+  item_pedido_id integer [pk, increment]
+  pedido_id      integer [not null, ref: > pedido.pedido_id]
+  produto_id     integer [not null, ref: > produto.produto_id]
+  quantidade     integer [not null, note: 'CHECK quantidade > 0']
+  preco_unitario "numeric(10,2)" [not null, note: 'CHECK preco_unitario > 0']
+
+  Indexes {
+    (pedido_id, produto_id) [unique]
+  }
+}
+
+Table pagamento {
+  pagamento_id   integer [pk, increment]
+  pedido_id      integer [not null, ref: > pedido.pedido_id]
+  valor          "numeric(12,2)" [not null, note: 'CHECK valor > 0']
+  metodo         varchar(40) [not null, note: "CHECK metodo IN ('pix','cartao_credito','cartao_debito','boleto')"]
+  status         varchar(20) [not null, default: 'pendente', note: "CHECK status IN ('pendente','pago','recusado')"]
+  data_pagamento timestamp [not null, default: `now()`]
+  Note: 'Entidade própria (não embutida em pedido) para viabilizar o CDC de fraude do cap 11. data_pagamento permite detectar rajadas.'
+
+  Indexes {
+    pedido_id
+  }
+}
+
+Table entrega {
+  entrega_id    integer [pk, increment]
+  pedido_id     integer [not null, unique, ref: > pedido.pedido_id]
+  entregador_id integer [not null, ref: > entregador.entregador_id]
+  status        varchar(20) [not null, default: 'em_transito', note: "CHECK status IN ('em_transito','entregue','devolvido')"]
+  data_saida    timestamp [not null, default: `now()`]
+  data_entrega  timestamp
+  Note: 'Ancora os eventos de GPS do streaming (cap 12).'
+}

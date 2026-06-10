@@ -65,10 +65,21 @@ Repare: já para uma pergunta simples ("receita por categoria") foram necessári
 
 | Variável | Padrão | Para quê |
 | --- | --- | --- |
-| `SEED_CUSTOMERS` | 250 | Quantidade de clientes gerados. |
-| `SEED_ORDERS` | 1200 | Quantidade de pedidos gerados. |
+| `SEED_CLIENTES` | 250 | Quantidade de clientes gerados. |
+| `SEED_PEDIDOS` | 1200 | Quantidade de pedidos gerados. |
+| `SEED_FRAUDE` | false | Injeta comportamentos suspeitos (ticket anormal, rajada de pagamentos). Usado pelo cap 13. |
 | `SEED_RESET` | true | Limpa antes de popular (idempotência). |
 | `DB_PORT` | 5434 | Porta exposta no host. |
+
+### Modo de volume maior (cap 13 — ML de fraude)
+
+O detector de fraude precisa de massa na classe minoritária. Para esse caso, suba o seeder maior e com comportamentos suspeitos:
+
+```bash
+SEED_CLIENTES=5000 SEED_PEDIDOS=60000 SEED_FRAUDE=true docker compose run --rm seeder
+```
+
+Lembre: `SEED_FRAUDE` gera só o *comportamento*, não a label — a confirmação de fraude chega depois, por processo à parte (ver [cap 13](../13-base-ml-fraude/GUIDE.md)).
 
 ## Recomeçar do zero
 

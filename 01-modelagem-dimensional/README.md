@@ -55,6 +55,8 @@ erDiagram
 ```
 
 > ERD gerado por código em [`diagrams/architecture.py`](./diagrams/architecture.py).
+>
+> O star schema também está descrito **as-code** em [`modeling/nuvemstore_dw.dbml`](./modeling/nuvemstore_dw.dbml). Cole em [dbdiagram.io](https://dbdiagram.io) para o ERD renderizado, ou rode `npx @dbml/cli@latest sql modeling/nuvemstore_dw.dbml --postgres` para o DDL. Compare lado a lado com o [DBML do OLTP](../00-modelagem-transacional/modeling/nuvemstore_oltp.dbml) (cap 00) para ver os dois paradigmas — normalizado vs dimensional.
 
 ## Por que desnormalizar (de propósito)
 
