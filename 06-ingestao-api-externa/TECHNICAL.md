@@ -26,4 +26,35 @@ O destino inicial deve ser staging. Transformar direto no consumo final mistura 
 APIs externas trazem dores específicas que bancos internos não têm:
 
 - **Indisponibilidade**: a API pode sair do ar sem aviso. O extractor precisa de retry com backoff exponencial.
-- **Rate limiting**: a maioria das APIs limita requisições por 
+- **Rate limiting**: a maioria das APIs limita requisições por segundo ou por minuto. Ultrapassar o limite resulta em HTTP 429 e possível bloqueio temporário.
+- **Paginação**: datasets grandes são retornados em páginas. O extractor precisa iterar até a última página, tratando cursores ou offsets.
+- **Mudança de contrato**: o fornecedor pode adicionar, remover ou renomear campos sem aviso. O staging deve gravar o payload cru; transformações rígidas ficam na camada seguinte.
+- **Dados atrasados ou fora de ordem**: janelas incrementais por `atualizado_em` podem perder registros que foram atualizados durante a janela anterior mas não apareceram a tempo.
+- **Idempotência no destino**: rodar o extractor duas vezes para a mesma janela não deve duplicar dados. O padrão é UPSERT por chave natural ou DELETE+INSERT por janela.
+
+## Tecnologias equivalentes
+
+| Abordagem | Quando usar |
+| --- | --- |
+| API batch em Python | Simples, bom para volumes moderados e endpoints HTTP. Total controle sobre retry, paginação e parsing. |
+| Airbyte | Muitos conectores prontos, bom para SaaS. Open source, mas requer infraestrutura própria. |
+| Fivetran | Gerenciado, menos operação, maior custo. Ideal quando o time não quer manter conectores. |
+| Meltano | EL (extract-load) baseado em Singer taps. Configurável via YAML, boa integração com dbt. |
+| Kafka source connector | Quando a fonte publica eventos ou existe conector adequado no ecossistema Connect. |
+| Webhook | Quando a fonte externa envia mudanças por push em vez de o consumidor puxar. |
+
+## Quando usar
+
+Use extração batch de API quando o fornecedor expõe dados via HTTP e a latência tolerada é de minutos a horas. É o padrão mais comum para integração com parceiros, logística, pagamentos e SaaS.
+
+Evite quando a fonte tem volume muito alto e suporta streaming nativo (CDC, webhooks, filas). Nesse caso, o batch adiciona latência desnecessária e pode sobrecarregar a API com requests grandes.
+
+## Como isso aparece no projeto
+
+Esta etapa cria a dor que justifica Airflow. Com OLTP, dbt e API externa, já existem dependências e falhas suficientes para precisar de orquestração.
+
+## 📚 Referências
+
+- [RESTful API Design — Best Practices](https://restfulapi.net/) — convenções de design REST que afetam como o extractor consome a API.
+- [HTTP Status Codes](https://developer.mozilla.org/en-US/docs/Web/HTTP/Status) — referência MDN para entender 429, 503 e outros códigos relevantes.
+- [Airbyte Documentation](https://docs.airbyte.com/) — plataforma open source de ingestão com centenas de conectores.

@@ -62,4 +62,10 @@ Evite quando a transformacao vira produto: sem testes, sem DAG, sem lineage e se
 
 ## Como isso aparece no projeto
 
-O compose do capítulo sobe o ambiente em etapas para demonstrar a história acontecendo: origem, seed, pipeline e depois BI. O DuckDB gerado em `data/warehouse` contem a área raw e os marts
+O compose do capítulo sobe o ambiente em etapas para demonstrar a história acontecendo: origem, seed, pipeline e depois BI. O DuckDB gerado em `data/warehouse` contem a área raw e os marts.
+
+## 📚 Referências
+
+- [DuckDB Documentation](https://duckdb.org/docs/) — referência completa do motor analítico embarcado.
+- [Python DB-API 2.0 (PEP 249)](https://peps.python.org/pep-0249/) — especificação da interface padrão de bancos em Python.
+- [ELT vs ETL — Fivetran](https://www.fivetran.com/blog/elt-vs-etl) — comparação clara dos dois padrões.

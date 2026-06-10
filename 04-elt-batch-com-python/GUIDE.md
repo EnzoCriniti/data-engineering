@@ -73,4 +73,43 @@ O pipeline faz três coisas em sequência: Extract (Postgres → Python), Load (
   - `mart_top_produtos`: top 20 produtos por receita, com JOIN raw_item_pedido → raw_produto → raw_categoria.
 
 ### O que fazer
-Script Python com três fases separadas por logs claros. Extract: itera tabelas da origem com `SELECT *`, captura column names via `cursor.description`. Load: para cada tabela, `DROP TABLE IF EXISTS raw_X`, `CREATE TABLE raw_X` com todas colunas VARCHAR, `executemany` para inserir. Transfo
+Script Python com três fases separadas por logs claros. Extract: itera tabelas da origem com `SELECT *`, captura column names via `cursor.description`. Load: para cada tabela, `DROP TABLE IF EXISTS raw_X`, `CREATE TABLE raw_X` com todas colunas VARCHAR, `executemany` para inserir. Transform: executa SQL de cada mart.
+
+### ⚠️ Armadilhas
+- `executemany` do DuckDB espera listas de tuplas, não listas de listas. `cursor.fetchall()` retorna tuplas — ok.
+- Esquecer de converter Decimal: `duckdb.InvalidInputException: Could not convert`.
+- Não fechar conexão do DuckDB: arquivo pode ficar locked para queries subsequentes.
+
+### 📚 Para se aprofundar
+- [DuckDB Python API](https://duckdb.org/docs/api/python/overview) — como usar DuckDB em Python.
+- [cursor.description (PEP 249)](https://peps.python.org/pep-0249/#description) — metadados de colunas em DB-API.
+
+---
+
+## Etapa 3 — Containerizar o pipeline
+
+### O que fazer
+- `pipeline/requirements.txt`: `psycopg2-binary==2.9.9`, `duckdb==1.1.0`
+- `pipeline/Dockerfile`: `python:3.12-slim`, copy requirements first, install, copy code, CMD.
+
+---
+
+## ✅ Checklist final
+
+- [ ] Pipeline roda do zero e gera `.duckdb`
+- [ ] Todos os `raw_*` têm count = count da origem
+- [ ] `mart_receita_diaria` exclui pedidos cancelados
+- [ ] Receita total do mart = receita de não-cancelados na origem
+- [ ] Rodar pipeline duas vezes produz mesmo resultado (idempotência)
+- [ ] `python -m py_compile pipeline/pipeline.py` passa
+
+Compreensão (você entendeu — responda sem olhar):
+
+- [ ] Conte o cenário da regra de negócio que muda: o que ETL obriga a refazer e o que ELT poupa?
+- [ ] Por que carregar tudo como VARCHAR no raw? Dê um exemplo de valor da origem que quebraria um CAST no extract.
+- [ ] Em que situações DuckDB é a escolha certa — e em quais ele **não** é?
+- [ ] Por que `psycopg2` exige converter `Decimal` para `float` antes de inserir no DuckDB?
+
+## A dor que sobra
+
+Transformações são SQL solto em strings Python. Não há lineage (de onde veio cada coluna?), não há testes (o mart está correto?), não há documentação automática. Qualquer mudança no schema upstream quebra silenciosamente. O capítulo 05 resolve isso com dbt.

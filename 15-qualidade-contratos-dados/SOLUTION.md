@@ -157,4 +157,14 @@ if __name__ == "__main__":
 ## Como testar
 
 ```bash
-# Pr
+# Pré-requisito: o ambiente do cap 10 (lakehouse) no ar, com o gold materializado
+# e o Trino acessível. Veja o RUNBOOK para conectar os dois compose na mesma rede.
+
+# Roda o portão de qualidade contra o gold via Trino
+docker compose --profile jobs run --rm quality
+
+# Provar que o portão pega dado ruim: rodar um INSERT com velocidade fora da faixa
+# no gold (ou apontar para uma tabela com dado sujo) e rodar de novo — exit 1.
+```
+
+Esperado: com o gold sano, log "PORTÃO ABERTO" e exit 0. Com uma `velocidade_media` acima de 200 (GPS corrompido), o runner reporta a violação e sai com código 1 — barrando a publicação se plugado numa DAG.

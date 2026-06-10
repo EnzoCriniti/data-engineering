@@ -67,4 +67,31 @@ O star schema do capítulo 01 vira DDL real. Quatro tabelas: `dim_tempo`, `dim_c
 - *Tabelas vazias por design*: o load job não é implementado neste capítulo (separação pedagógica — o capítulo 04 trata de carga).
 
 ### O que fazer
-Escrever `ddl/analytics.sql` com `CREATE SCHEMA IF NOT EXISTS analytics` seguido das 4 tabelas com tipos corretos, FKs entre fato e dimensões, e índices. Manter as tabelas vazias
+Escrever `ddl/analytics.sql` com `CREATE SCHEMA IF NOT EXISTS analytics` seguido das 4 tabelas com tipos corretos, FKs entre fato e dimensões, e índices. Manter as tabelas vazias.
+
+### ⚠️ Armadilhas
+- Definir `dim_cliente.valido_ate` como `NOT NULL` impede representar a versão atual (que não tem data de fim). Use `DATE` nullable, onde `NULL` = versão corrente.
+- Esquecer `UNIQUE` em `dim_tempo.data` permite inserir o mesmo dia duas vezes, inflando JOINs.
+
+---
+
+## ✅ Checklist final
+
+- [ ] `docker compose up -d` sobe o Postgres com healthcheck healthy
+- [ ] `\dn` no psql lista schemas `public` e `analytics`
+- [ ] `\dt analytics.*` mostra 4 tabelas dimensionais
+- [ ] Seeder roda e popula `public.*` com dados do OLTP
+- [ ] Script analytics é re-executável sem erro
+- [ ] Tabelas dimensionais existem mas estão **vazias** (by design)
+- [ ] Índices existem nas FKs da fato
+
+Compreensão (você entendeu — responda sem olhar):
+
+- [ ] Schema do Postgres isola *o quê* e **não** isola *o quê*?
+- [ ] Descreva um cenário em que a query analítica degrada o checkout — e o cenário inverso.
+- [ ] Por que os scripts de init são numerados (`01-`, `02-`)? O que quebra sem isso?
+- [ ] Por que as tabelas dimensionais ficam **vazias** neste capítulo?
+
+## A dor que sobra
+
+Mesmo com schemas separados, OLTP e analytics compartilham o mesmo Postgres — mesma CPU, RAM, pool de conexões, I/O. Uma query analítica pesada pode degradar performance transacional. O capítulo 03 resolve com separação **física**: dois bancos Postgres em containers diferentes.

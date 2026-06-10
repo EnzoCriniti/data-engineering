@@ -175,4 +175,54 @@ SELECT
 FROM {{ source('raw', 'raw_item_pedido') }}
 ```
 
-## `mo
+## `models/staging/stg_pagamentos.sql`
+
+```sql
+SELECT
+    CAST(pagamento_id   AS INTEGER)   AS pagamento_id,
+    CAST(pedido_id      AS INTEGER)   AS pedido_id,
+    CAST(valor          AS DOUBLE)    AS valor,
+    CAST(metodo         AS VARCHAR)   AS metodo,
+    CAST(status         AS VARCHAR)   AS status,
+    CAST(data_pagamento AS TIMESTAMP) AS data_pagamento
+FROM {{ source('raw', 'raw_pagamento') }}
+```
+
+## `models/marts/mart_receita_diaria.sql`
+
+```sql
+SELECT
+    CAST(p.data_pedido AS DATE) AS dia,
+    COUNT(DISTINCT p.pedido_id) AS total_pedidos,
+    SUM(ip.quantidade * ip.preco_unitario) AS receita
+FROM {{ ref('stg_pedidos') }} p
+JOIN {{ ref('stg_itens_pedido') }} ip ON ip.pedido_id = p.pedido_id
+WHERE p.status != 'cancelado'
+GROUP BY 1
+ORDER BY 1
+```
+
+## `models/marts/mart_top_produtos.sql`
+
+```sql
+SELECT
+    pr.nome      AS produto,
+    pr.categoria AS categoria,
+    SUM(ip.quantidade * ip.preco_unitario) AS receita,
+    SUM(ip.quantidade)                     AS unidades
+FROM {{ ref('stg_itens_pedido') }} ip
+JOIN {{ ref('stg_produtos') }}     pr ON pr.produto_id = ip.produto_id
+JOIN {{ ref('stg_pedidos') }}      p  ON p.pedido_id   = ip.pedido_id
+WHERE p.status != 'cancelado'
+GROUP BY 1, 2
+ORDER BY receita DESC
+LIMIT 20
+```
+
+## Validações
+
+```bash
+dbt run        # materializa staging (views) e marts (tables)
+dbt test       # testa not_null, unique
+dbt docs generate && dbt docs serve  # DAG visual
+```

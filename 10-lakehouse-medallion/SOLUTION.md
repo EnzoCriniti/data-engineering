@@ -124,4 +124,157 @@ def main():
 
     # APPEND-ONLY: o bronze nunca sobrescreve (GUIDE Conceito 3).
     # É isso que preserva o histórico e permite reprocessar silver/gold sem reextrair a origem.
-    # Trocar por mode("overwrite") 
+    # Trocar por mode("overwrite") aqui é a armadilha que destrói o propósito do bronze.
+    output_path = "s3a://datalake/bronze/entregas"
+    print(f"Gravando Delta na camada Bronze: {output_path}")
+    
+    df_bronze.write \
+        .format("delta") \
+        .mode("append") \
+        .save(output_path)
+        
+    print("Ingestão Bronze concluída.")
+    spark.stop()
+
+if __name__ == "__main__":
+    main()
+```
+
+## `spark/jobs/silver_transform.py`
+
+```python
+from pyspark.sql import SparkSession
+from pyspark.sql.functions import col, sha2, when
+from delta.tables import DeltaTable
+
+def main():
+    spark = SparkSession.builder \
+        .appName("Silver Transformation") \
+        .config("spark.sql.extensions", "io.delta.sql.DeltaSparkSessionExtension") \
+        .config("spark.sql.catalog.spark_catalog", "org.apache.spark.sql.delta.catalog.DeltaCatalog") \
+        .getOrCreate()
+
+    bronze_path = "s3a://datalake/bronze/entregas"
+    silver_path = "s3a://datalake/silver/entregas"
+
+    print("Lendo da camada Bronze...")
+    df_bronze = spark.read.format("delta").load(bronze_path)
+
+    # LIMPEZA + PSEUDONIMIZAÇÃO DE PII (GUIDE Conceito 4):
+    # - filter NOT NULL nas chaves = regra técnica; silver rejeita o que não passa.
+    # - reduzir a precisão do GPS (decimal 5,2) generaliza a localização -> requisito LGPD.
+    #   Em produção, o email também seria hasheado aqui: sha2(concat(salt, email), 256).
+    df_clean = df_bronze \
+        .filter(col("entrega_id").isNotNull() & col("pedido_id").isNotNull()) \
+        .withColumn("latitude", when(col("latitude").isNotNull(), col("latitude").cast("decimal(5,2)")).otherwise(None)) \
+        .withColumn("longitude", when(col("longitude").isNotNull(), col("longitude").cast("decimal(5,2)")).otherwise(None))
+        
+    print("Realizando MERGE na camada Silver (Deduplicação)...")
+    
+    # DEDUPLICAÇÃO VIA MERGE (GUIDE Conceito 2 + Etapa 3):
+    # O bronze é append-only, então a MESMA entrega_id pode vir em várias ingestões
+    # (ex.: status "em_rota" e depois "entregue"). Um append+distinct NÃO resolve,
+    # porque as linhas são diferentes. O MERGE por chave mantém UMA linha por entrega_id,
+    # com o estado mais recente. É o mesmo padrão de upsert que o CDC do cap 11 reusa.
+    # Primeira execução: tabela não existe ainda -> grava direto. Depois: MERGE.
+    if not DeltaTable.isDeltaTable(spark, silver_path):
+        df_clean.write.format("delta").mode("overwrite").save(silver_path)
+    else:
+        silver_table = DeltaTable.forPath(spark, silver_path)
+        
+        silver_table.alias("target").merge(
+            df_clean.alias("updates"),
+            "target.entrega_id = updates.entrega_id"   # condição de chave: erre aqui e duplica/sobrescreve errado
+        ).whenMatchedUpdateAll() \
+         .whenNotMatchedInsertAll() \
+         .execute()
+
+    print("Transformação Silver concluída.")
+    spark.stop()
+
+if __name__ == "__main__":
+    main()
+```
+
+## `spark/jobs/gold_marts.py`
+
+```python
+from pyspark.sql import SparkSession
+from pyspark.sql.functions import col, avg, count
+
+def main():
+    spark = SparkSession.builder \
+        .appName("Gold Marts") \
+        .config("spark.sql.extensions", "io.delta.sql.DeltaSparkSessionExtension") \
+        .config("spark.sql.catalog.spark_catalog", "org.apache.spark.sql.delta.catalog.DeltaCatalog") \
+        .getOrCreate()
+
+    silver_path = "s3a://datalake/silver/entregas"
+    gold_path = "s3a://datalake/gold/resumo_entregas"
+
+    print("Lendo da camada Silver...")
+    df_silver = spark.read.format("delta").load(silver_path)
+
+    print("Calculando agregações...")
+    # GOLD = métricas de negócio prontas para consumo (GUIDE Conceito 3).
+    # Agrega a silver por status: total de entregas e velocidade média.
+    df_gold = df_silver.groupBy("status").agg(
+        count("entrega_id").alias("total_entregas"),
+        avg("velocidade_kmh").alias("velocidade_media")
+    )
+
+    # OVERWRITE é seguro no gold (GUIDE Etapa 4): a tabela é DERIVADA da silver,
+    # logo recalculável a qualquer momento -> sobrescrever é idempotente.
+    # (Diferente do bronze, onde overwrite apagaria histórico irrecuperável.)
+    print(f"Gravando Delta na camada Gold: {gold_path}")
+    df_gold.write \
+        .format("delta") \
+        .mode("overwrite") \
+        .save(gold_path)
+
+    print("Marts Gold criados com sucesso.")
+    spark.stop()
+
+if __name__ == "__main__":
+    main()
+```
+
+## Validações
+
+Roda os três jobs em ordem e prova as garantias que o GUIDE ensinou:
+
+```bash
+# 1) Bronze append-only: rodar 2x faz o COUNT crescer
+docker compose run spark-submit spark-submit /app/jobs/bronze_ingest.py
+docker compose run spark-submit spark-submit /app/jobs/bronze_ingest.py
+
+# 2) Silver deduplicada: COUNT == COUNT(DISTINCT entrega_id)
+docker compose run spark-submit spark-submit /app/jobs/silver_transform.py
+
+# 3) Gold consultável
+docker compose run spark-submit spark-submit /app/jobs/gold_marts.py
+```
+
+Provas conceituais (rodar no `spark-sql` ou via Trino):
+
+```sql
+-- Time travel (GUIDE Conceito 2): comparar a versão atual com a versão 0
+SELECT COUNT(*) FROM delta.`s3a://datalake/silver/entregas`;
+SELECT COUNT(*) FROM delta.`s3a://datalake/silver/entregas` VERSION AS OF 0;
+
+-- Histórico de commits registrado no _delta_log
+DESCRIBE HISTORY delta.`s3a://datalake/silver/entregas`;
+
+-- Silver realmente deduplicada: as duas contagens devem ser IGUAIS
+SELECT COUNT(*) AS total,
+       COUNT(DISTINCT entrega_id) AS distintos
+FROM   delta.`s3a://datalake/silver/entregas`;
+```
+
+```python
+# VACUUM: remove Parquets antigos não referenciados (limpeza de custo)
+from delta.tables import DeltaTable
+DeltaTable.forPath(spark, "s3a://datalake/silver/entregas").vacuum(168)  # retém 7 dias
+```
+
+Esperado: bronze cresce a cada run; `total == distintos` na silver (MERGE funcionou); `VERSION AS OF 0` mostra um estado anterior (time travel funciona); `DESCRIBE HISTORY` lista um commit por escrita.

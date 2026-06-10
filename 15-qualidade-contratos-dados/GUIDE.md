@@ -115,4 +115,4 @@ Compreensão (você entendeu — responda sem olhar):
 
 ## A dor que sobra
 
-O dado que entra agora é validado, mas a operação é cega a falhas: um job que quebra de madrugada ou uma tabela que parou de atualizar passam despercebidos. O próximo capítulo ataca isso: **obser
+O dado que entra agora é validado, mas a operação é cega a falhas: um job que quebra de madrugada ou uma tabela que parou de atualizar passam despercebidos. O próximo capítulo ataca isso: **observabilidade do pipeline**.

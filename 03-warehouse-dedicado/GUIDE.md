@@ -119,4 +119,28 @@ Script Python que: conecta em ambos os bancos, trunca warehouse, insere dim_temp
 
 ### O que fazer
 - `warehouse/requirements.txt`: `psycopg2-binary==2.9.9`
-- `warehouse/
+- `warehouse/Dockerfile`: `python:3.12-slim`, copia requirements, instala, copia `migrate.py`, `CMD ["python", "migrate.py"]`
+- `.env.example`: `OLTP_URL=postgresql://nuvemstore:nuvemstore@oltp:5432/nuvemstore`, `WAREHOUSE_URL=postgresql://warehouse:warehouse@warehouse:5432/nuvemstore_warehouse`
+
+---
+
+## ✅ Checklist final
+
+- [ ] `docker compose up -d oltp warehouse` sobe ambos com healthcheck healthy
+- [ ] `docker compose --profile jobs run seeder` popula OLTP sem erro
+- [ ] `docker compose --profile jobs run migrate` carrega warehouse sem erro
+- [ ] COUNT de dim_cliente = COUNT de clientes na origem
+- [ ] Receita total na fato = receita de itens não-cancelados na origem
+- [ ] Rodar migrate duas vezes não muda contagens (idempotência)
+- [ ] dim_tempo não tem datas duplicadas
+
+Compreensão (você entendeu — responda sem olhar):
+
+- [ ] Separação **lógica** (schemas) isola o quê? Separação **física** (containers) isola o quê a mais?
+- [ ] Por que resolver surrogates com `INSERT...SELECT...JOIN` em SQL é mais rápido que um loop com dict lookup em Python? Dê a ordem de complexidade de cada um.
+- [ ] O que a reconciliação verifica e como você saberia, só pelos números, que o pipeline tem bug?
+- [ ] Por que **full reload** é a escolha certa para ~1200 pedidos, e o que exatamente o incremental adicionaria de complexidade?
+
+## A dor que sobra
+
+O migrate é full reload — recarrega tudo a cada execução. Conforme dados crescem, fica lento e desperdiça I/O. Além disso: transformações são SQL solto dentro de Python — sem testes, sem lineage, sem documentação automática. O capítulo 04 formaliza o ELT, e o capítulo 05 adiciona dbt.

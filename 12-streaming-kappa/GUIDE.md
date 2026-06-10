@@ -61,4 +61,50 @@ Script Python que simula entregadores enviando coordenadas GPS para tópico no R
 
 ---
 
-## Etapa 2 — Implementar consumer Spark Structured Streamin
+## Etapa 2 — Implementar consumer Spark Structured Streaming
+
+### Contexto
+Job Spark que lê o tópico GPS, calcula métricas por janela, e grava resultados.
+
+### Decisões de design
+- *Tumbling window de 5 minutos*: velocidade média por região.
+- *Watermark de 2 minutos*: tolera atraso de até 2 min.
+- *Output mode append*: grava apenas janelas finalizadas. Evita reescrita contínua.
+- *Sink em Delta Lake*: métricas históricas preservadas com transações.
+
+### O que fazer
+`spark/jobs/streaming_gps.py`: SparkSession com Structured Streaming, lê do Redpanda, aplica watermark, calcula `avg(velocidade)` por `regiao` e window de 5 min, grava Delta em `s3a://lakehouse/gold/velocidade_regional/`.
+
+### ⚠️ Armadilhas
+- Watermark muito curto: perde eventos atrasados. Muito longo: atrasa materialização.
+- Não configurar `spark.sql.streaming.checkpointLocation`: sem checkpoint, o job reprocessa tudo do zero ao reiniciar.
+- Output mode `complete` reescreve toda a tabela a cada trigger — ineficiente para volumes grandes.
+
+---
+
+## Etapa 3 — Monitoramento e lag
+
+### O que fazer
+Monitorar consumer lag no Redpanda console. Se lag cresce consistentemente, o consumer não está acompanhando — precisa de mais recursos ou otimização.
+
+---
+
+## ✅ Checklist final
+
+- [ ] Produtor GPS envia eventos continuamente para Redpanda
+- [ ] Consumer Spark Structured Streaming processa sem erro
+- [ ] Métricas de velocidade por região aparecem na tabela Delta gold
+- [ ] Watermark funciona: eventos dentro da tolerância são incluídos
+- [ ] Checkpoint funciona: reiniciar o job continua do ponto anterior
+- [ ] Consumer lag é monitorável no console
+
+Compreensão (você entendeu — responda sem olhar):
+
+- [ ] Por que Kappa corrige um bug de métrica uma vez e Lambda duas? O que "replay" exige do log?
+- [ ] Diferencie tumbling, sliding e session window com um exemplo de cada.
+- [ ] Conte o cenário do GPS que sai do túnel: o que watermark resolve e qual é o tradeoff de ajustá-lo?
+- [ ] O que o checkpoint guarda, e o que acontece sem ele quando o job reinicia?
+
+## A dor que sobra
+
+Agora a plataforma tem dados históricos (batch) e dados em tempo real (streaming). O próximo passo é combinar ambos para um caso de negócio concreto: detecção de fraude. O capítulo 13 constrói a feature table que alimenta um modelo de ML, com garantia de point-in-time correctness.

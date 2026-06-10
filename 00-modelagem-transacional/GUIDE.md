@@ -123,4 +123,43 @@ O seeder precisa rodar de forma isolada e reproduzível. O Dockerfile empacota P
 `requirements.txt` com `Faker==25.8.0` e `psycopg2-binary==2.9.9`. Dockerfile que copia requirements, instala, copia código, e define `CMD ["python", "seed.py"]`.
 
 ### ⚠️ Armadilhas
-- `psycopg2` (sem `-binary`) exige `libpq-dev` e `gcc` na imagem. Use `ps
+- `psycopg2` (sem `-binary`) exige `libpq-dev` e `gcc` na imagem. Use `psycopg2-binary` para simplificar builds em desenvolvimento.
+- Não fixar versões no requirements (`Faker>=25`) pode quebrar o seeder no futuro quando a API do Faker mudar.
+
+---
+
+## Etapa 4 — Gerar o diagrama como código (`diagrams/architecture.py`)
+
+### Contexto
+Um ERD versionado no repositório documenta o schema visualmente. Usar a biblioteca `diagrams` em vez de um PNG estático garante que o diagrama é reproduzível e atualizável.
+
+### O que fazer
+Script Python usando a biblioteca `diagrams` que gera `architecture.png` com as 8 tabelas e seus relacionamentos. O CI do repositório regenera automaticamente.
+
+### ⚠️ Armadilhas
+- A biblioteca `diagrams` depende de Graphviz instalado no sistema. No CI, isso é resolvido com `apt-get install graphviz`.
+
+---
+
+## ✅ Checklist final
+
+Operacional (o ambiente roda):
+
+- [ ] 8 tabelas existem no Postgres com PKs, FKs e CHECKs
+- [ ] `schema.sql` é re-executável (rodar duas vezes não dá erro)
+- [ ] Seeder roda sem erro e imprime `Seed concluído: 250 clientes, 1200 pedidos.`
+- [ ] Rodar seeder duas vezes com `SEED_RESET=true` produz contagens idênticas
+- [ ] Nenhum dado viola FKs ou CHECKs (`SELECT` de verificação retorna 0 violações)
+- [ ] `diagrams/architecture.py` compila e gera `architecture.png`
+- [ ] `python -m py_compile seed/seed.py` passa sem erro
+
+Compreensão (você entendeu — responda sem olhar):
+
+- [ ] **Por que** a categoria vira tabela própria em vez de coluna de texto em `produto`?
+- [ ] Quando usar `ON DELETE CASCADE` e quando `RESTRICT`? Dê um exemplo de cada neste schema.
+- [ ] O que `Faker.seed(42)` + `TRUNCATE ... RESTART IDENTITY` garantem juntos, e por que isso importa para validar os capítulos seguintes?
+- [ ] Por que a integridade fica no **banco** (CHECK/FK) e não na aplicação?
+
+## A dor que sobra
+
+Analisar dados a partir deste OLTP requer muitos JOINs — receita por categoria exige `item_pedido → produto → categoria → pedido`. Os query plans são complexos e competem com escritas transacionais. O capítulo 01 resolve isso desenhando um modelo dimensional otimizado para leitura.

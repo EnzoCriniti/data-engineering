@@ -129,4 +129,87 @@ def main():
             "pedido_id": pedido_id,
             "latitude": round(lat, 6),
             "longitude": round(lon, 6),
-            "velocidade_kmh
+            "velocidade_kmh": round(vel, 2),
+            "timestamp": datetime.utcnow().isoformat() + "Z"
+        }
+        
+        producer.send(TOPIC, event)
+        print(f"Enviado: {event}")
+        time.sleep(1) # 1 evento por segundo
+
+if __name__ == "__main__":
+    main()
+```
+
+## `spark/jobs/streaming_gps.py`
+
+```python
+from pyspark.sql import SparkSession
+from pyspark.sql.functions import from_json, col, window, avg
+from pyspark.sql.types import StructType, StructField, IntegerType, DoubleType, StringType
+
+def main():
+    spark = SparkSession.builder \
+        .appName("GPS Streaming") \
+        .config("spark.sql.extensions", "io.delta.sql.DeltaSparkSessionExtension") \
+        .config("spark.sql.catalog.spark_catalog", "org.apache.spark.sql.delta.catalog.DeltaCatalog") \
+        .getOrCreate()
+
+    schema = StructType([
+        StructField("entregador_id", IntegerType(), True),
+        StructField("pedido_id", IntegerType(), True),
+        StructField("latitude", DoubleType(), True),
+        StructField("longitude", DoubleType(), True),
+        StructField("velocidade_kmh", DoubleType(), True),
+        StructField("timestamp", StringType(), True)
+    ])
+
+    print("Iniciando leitura do stream...")
+    df_kafka = spark.readStream \
+        .format("kafka") \
+        .option("kafka.bootstrap.servers", "redpanda:29092") \
+        .option("subscribe", "gps_events") \
+        .option("startingOffsets", "latest") \
+        .load()
+
+    # Parse JSON e conversão de timestamp
+    df_parsed = df_kafka.selectExpr("CAST(value AS STRING) as json") \
+        .select(from_json("json", schema).alias("data")).select("data.*") \
+        .withColumn("timestamp", col("timestamp").cast("timestamp"))
+
+    # Watermark: tolera atrasos de até 2 minutos
+    # Tumbling Window: 5 minutos
+    df_agrupado = df_parsed \
+        .withWatermark("timestamp", "2 minutes") \
+        .groupBy(
+            window(col("timestamp"), "5 minutes")
+        ).agg(
+            avg("velocidade_kmh").alias("velocidade_media")
+        )
+
+    print("Iniciando a escrita no Delta Lake (Gold)...")
+    
+    query = df_agrupado.writeStream \
+        .format("delta") \
+        .outputMode("append") \
+        .option("checkpointLocation", "s3a://datalake/checkpoints/streaming_gps") \
+        .start("s3a://datalake/gold/velocidade_regional")
+
+    query.awaitTermination()
+
+if __name__ == "__main__":
+    main()
+```
+
+## Como testar
+
+```bash
+# Sobe a infra (precisa do MinIO do cap 09 + Redpanda do cap 11)
+docker compose up -d
+
+# Roda o produtor simulando os entregadores enviando sinal GPS
+docker compose --profile simulators run gps_producer
+
+# Em outro terminal, inicia o job de streaming
+docker compose run spark-submit spark-submit /app/jobs/streaming_gps.py
+```

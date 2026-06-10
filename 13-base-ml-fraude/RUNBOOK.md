@@ -47,4 +47,4 @@ docker compose up -d
 
 ## Fim da trilha
 
-Este é o último capítulo. A plataforma cobre da modelagem transacional à base de ML — voltando ao [README raiz](../README.md) para a visão geral da jor
+Este é o último capítulo. A plataforma cobre da modelagem transacional à base de ML — voltando ao [README raiz](../README.md) para a visão geral da jornada.

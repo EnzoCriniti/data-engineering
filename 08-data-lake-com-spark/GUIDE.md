@@ -52,4 +52,41 @@ Compose com: namenode, datanode (HDFS), spark-master, spark-worker, hive-metasto
 
 ---
 
-## Etapa 2 
+## Etapa 2 — Criar job Spark de ingestão (JSON → Parquet)
+
+### Contexto
+O job lê dados brutos (JSON da API de entregas ou CSVs exportados) do HDFS, converte para Parquet particionado, e registra no metastore.
+
+### Decisões de design
+- *Parquet como formato de saída*: compressão snappy, particionamento por data.
+- *Registrar no Hive Metastore*: `df.write.saveAsTable("lake.entregas")` com `mode("overwrite")` para idempotência.
+- *Particionamento por data*: queries analíticas filtram por período — partições reduzem I/O drasticamente.
+
+### O que fazer
+`spark/jobs/ingest_to_lake.py`: SparkSession com Hive support, lê JSON do HDFS, limpa schema, escreve Parquet particionado em `/lake/entregas/`, registra tabela no metastore.
+
+### ⚠️ Armadilhas
+- Não configurar `spark.sql.warehouse.dir`: tabelas são salvas em local inesperado.
+- Muitas partições pequenas (small files problem): cada arquivo Parquet gera overhead no namenode. Usar `coalesce()` para controlar o número de arquivos por partição.
+- Schema inference de JSON pode inferir tipos errados. Definir schema explícito com StructType.
+
+---
+
+## ✅ Checklist final
+
+- [ ] HDFS sobe com namenode e pelo menos 1 datanode healthy
+- [ ] Spark master e worker conectados (verificar na UI Spark :8081)
+- [ ] Job de ingestão roda sem erro e gera Parquet no HDFS
+- [ ] Tabela registrada no Hive Metastore e consultável via Spark SQL
+- [ ] Particionamento por data funciona (pruning verificável no explain plan)
+
+Compreensão (você entendeu — responda sem olhar):
+
+- [ ] Diferencie data lake de warehouse: o que cada um ganha e o que perde?
+- [ ] Dê um exemplo de operação narrow e uma wide. Por que o shuffle da wide é a parte cara?
+- [ ] Por que Parquet lê só ~6% do dado numa query de poucas colunas? Cite os três mecanismos (colunar, partição, estatísticas).
+- [ ] Sem um metastore, por que o lake vira um "data swamp"?
+
+## A dor que sobra
+
+HDFS acopla storage e compute — para aumentar storage, é preciso aumentar infraestrutura do cluster. Operação de HDFS (namenode, replicação, balanceamento) é cara. O capítulo 09 migra para object storage (S3/MinIO), desacoplando storage de compute.

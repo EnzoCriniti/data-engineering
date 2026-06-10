@@ -105,4 +105,56 @@ Com o grão definido, separar o que é métrica (fica na fato) do que é context
 - **`dim_produto`**: `sk_produto`, `produto_id`, `nome`, `categoria` (denormalizado).
 
 ### ⚠️ Armadilhas
-- Não incluir a chave natural na dimensão impede r
+- Não incluir a chave natural na dimensão impede reconciliação com a origem.
+- `dim_tempo` sem `data UNIQUE` permite duplicatas que inflam JOINs.
+
+---
+
+## Etapa 3 — Documentar o mapeamento OLTP → dimensional
+
+### O que fazer
+Criar tabela de mapeamento explícita:
+
+| Origem (OLTP) | Destino (dimensional) | Transformação |
+|---|---|---|
+| `pedido.data_pedido` | `dim_tempo.data` | Extrair DATE, derivar dia/mes/trimestre/ano |
+| `cliente.*` | `dim_cliente.*` | Adicionar SCD2 cols, surrogate key |
+| `produto.nome` + `categoria.nome` | `dim_produto.nome`, `dim_produto.categoria` | JOIN + denormalização |
+| `item_pedido.quantidade * preco_unitario` | `fct_vendas.valor_total` | Cálculo no load |
+
+---
+
+## Etapa 4 — Modelar SCD Type 2 em dim_cliente
+
+### O que fazer
+Definir as colunas de versionamento:
+- `valido_de` (DATE NOT NULL): quando esta versão começou a valer
+- `valido_ate` (DATE): quando esta versão deixou de valer (NULL = versão atual)
+- `atual` (BOOLEAN NOT NULL DEFAULT true): flag para simplificar queries de estado corrente
+
+### ⚠️ Armadilhas
+- Uma query de "clientes ativos" que não filtra `WHERE atual = true` retorna todas as versões históricas e infla contagem.
+- O processo de carga precisa fechar a versão antiga (`SET valido_ate = hoje, atual = false`) antes de inserir a nova. Se falhar no meio, fica com duas versões "atuais".
+
+---
+
+## ✅ Checklist final
+
+- [ ] Grão da fato declarado explicitamente e único
+- [ ] Toda dimensão tem surrogate key (sk_*) e natural key
+- [ ] `dim_cliente` modelada com colunas SCD2 (valido_de, valido_ate, atual)
+- [ ] Mapeamento OLTP → dimensional documentado em tabela
+- [ ] `dim_produto` inclui categoria denormalizada (decisão justificada)
+- [ ] Métricas da fato são todas aditivas no grão definido
+- [ ] Nenhum grão misto na mesma tabela fato
+
+Compreensão (você entendeu — responda sem olhar):
+
+- [ ] Com um exemplo numérico, mostre como misturar grãos na fato corrompe `SUM(valor)`.
+- [ ] Por que a fato referencia `sk_cliente` (surrogate) e não `cliente_id` (natural)?
+- [ ] Conte a história da cliente que mudou de cidade: o que SCD Tipo 1 erraria e o que SCD Tipo 2 acerta?
+- [ ] Por que `dim_produto` *denormaliza* a categoria, sendo que no cap 00 a separamos? Não é contradição?
+
+## A dor que sobra
+
+O modelo está desenhado mas vive apenas no papel. Analytics não pode rodar contra ele ainda. O capítulo 02 materializa as tabelas dimensionais — mas ainda dentro do mesmo banco do OLTP, o que cria contention de recursos.

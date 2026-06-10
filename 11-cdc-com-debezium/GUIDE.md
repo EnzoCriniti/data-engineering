@@ -67,4 +67,44 @@ Compose com: OLTP (Postgres com `wal_level=logical`), Redpanda (ou Kafka), Kafka
 ## Etapa 2 — Registrar o conector Debezium
 
 ### O que fazer
-POST para a
+POST para a API do Kafka Connect com configuração JSON: database hostname, port, user, password, tabelas a capturar, serialização (JSON ou Avro), slot name.
+
+### ⚠️ Armadilhas
+- Não definir `slot.name` explícito: Debezium cria nome automático que é difícil de rastrear.
+- Não definir `publication.autocreate.mode`: pode capturar tabelas que não deveria.
+
+---
+
+## Etapa 3 — Implementar consumer que grava no lakehouse
+
+### Contexto
+Um consumer Spark Structured Streaming (ou script Python) que lê tópicos do Redpanda e faz MERGE nas tabelas Delta da camada bronze/silver.
+
+### Decisões de design
+- *MERGE por PK + versão*: `WHEN MATCHED AND source.lsn > target.lsn THEN UPDATE`. Garante que eventos fora de ordem não sobrescrevem dados mais recentes.
+- *Tratamento de deletes*: marcar como `_deleted=true` em vez de DELETE físico. Permite audit trail.
+
+### O que fazer
+`consumer/cdc_to_delta.py`: Spark Structured Streaming lendo de Redpanda, parseando envelope Debezium, aplicando MERGE na tabela Delta.
+
+---
+
+## ✅ Checklist final
+
+- [ ] OLTP configurado com `wal_level=logical`
+- [ ] Conector Debezium registrado e em estado RUNNING
+- [ ] Tópicos criados no Redpanda para cada tabela capturada
+- [ ] INSERT/UPDATE/DELETE no OLTP geram eventos nos tópicos
+- [ ] Consumer aplica MERGE no lakehouse sem duplicatas
+- [ ] Re-processar mensagens (replay) não corrompe dados (idempotência)
+
+Compreensão (você entendeu — responda sem olhar):
+
+- [ ] Conte o cenário do pagamento inserido e removido entre dois pollings: por que CDC vê e o polling não?
+- [ ] O que `wal_level=logical` habilita, e o que acontece com o disco se um slot de replicação não for limpo?
+- [ ] Quais as duas fases do Debezium (snapshot e streaming) e o que cada evento carrega (`before`/`after`/op/LSN)?
+- [ ] Por que `MERGE` por PK + LSN protege contra **replays** *e* contra eventos **fora de ordem**?
+
+## A dor que sobra
+
+CDC captura mudanças, mas o lakehouse ainda processa em micro-batches. Para métricas em tempo real (entregas ativas, velocidade de entregadores), é preciso processar o stream continuamente. O capítulo 12 introduz a arquitetura Kappa com Spark Structured Streaming.

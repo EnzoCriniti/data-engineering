@@ -57,4 +57,8 @@ SELECT count(*) FROM hive.default.entregas;   -- via Trino, transparente ao usu�
 ```bash
 docker compose down -v
 docker compose up -d
-``
+```
+
+## Próximo passo
+
+[Capítulo 10](../10-lakehouse-medallion): dar ao lake em object storage as garantias transacionais do warehouse, com Delta/Iceberg e a arquitetura Medallion.

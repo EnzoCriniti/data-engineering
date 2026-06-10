@@ -79,4 +79,48 @@ Um modelo por tabela da origem:
 - *Typing aqui*: raw é tudo VARCHAR. Staging é onde o CAST acontece — se falhar, o erro é explícito e localizado.
 
 ### ⚠️ Armadilhas
-- CAST de VARCHAR com valor inesperado 
+- CAST de VARCHAR com valor inesperado ('N/A', '', NULL) quebra sem `TRY_CAST` ou `COALESCE`.
+- Não definir `schema.yml` com sources apontando para raw: o dbt não sabe de onde os dados vêm.
+
+---
+
+## Etapa 3 — Criar modelos de marts
+
+### O que fazer
+- `mart_receita_diaria.sql`: receita e contagem de pedidos por dia, excluindo cancelados. Usa `{{ ref('stg_pedidos') }}` e `{{ ref('stg_itens_pedido') }}`.
+- `mart_top_produtos.sql`: top 20 produtos por receita. JOIN entre stg_itens_pedido, stg_produtos.
+
+### ⚠️ Armadilhas
+- Não usar `ref()` e escrever nome de tabela direto: perde lineage e ordering.
+- Esquecer de excluir cancelados: receita inflada.
+
+---
+
+## Etapa 4 — Adicionar testes e documentação
+
+### O que fazer
+- `models/staging/schema.yml`: sources (apontando para raw_*), testes de not_null e unique em PKs, relationships entre staging models.
+- Rodar `dbt test` e verificar que tudo passa.
+- Rodar `dbt docs generate` e `dbt docs serve` para ver o DAG visual e a documentação.
+
+---
+
+## ✅ Checklist final
+
+- [ ] `dbt run` executa sem erro
+- [ ] `dbt test` passa todos os testes
+- [ ] Staging models são views, marts são tables
+- [ ] Receita no mart = receita de não-cancelados na origem
+- [ ] `dbt docs generate` gera documentação navegável
+- [ ] DAG visual mostra dependências corretas (sources → staging → marts)
+
+Compreensão (você entendeu — responda sem olhar):
+
+- [ ] O que o dbt faz e o que ele **não** faz (extrai? carrega? orquestra?)?
+- [ ] Com `ref()` vs nome de tabela cru: o que o dbt deixa de saber, e o que pode quebrar?
+- [ ] Por que staging materializa como **view** e marts como **table**?
+- [ ] Como um teste `unique` move a descoberta de um bug de "produção" para "pipeline"?
+
+## A dor que sobra
+
+dbt resolve transformação, mas não orquestra. Não sabe quando rodar, não monitora falhas de ingestão, não retenta APIs fora do ar. Com OLTP, dbt e API externa (cap 06), surgem dependências entre sistemas que precisam de um orquestrador. O capítulo 07 introduz Airflow.

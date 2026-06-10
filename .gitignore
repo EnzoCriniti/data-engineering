@@ -26,3 +26,9 @@ spark-warehouse/
 minio-data/
 
 # IDE / OS
+.idea/
+.vscode/
+.DS_Store
+
+# Diagramas: versionar os PNGs gerados (NÃO ignorar)
+!**/diagrams/*.png

@@ -52,4 +52,4 @@ docker compose up -d
 
 ## Próximo passo
 
-[Capítulo 11](../11-cdc-com-debezium): capturar mudanças do banco em tempo 
+[Capítulo 11](../11-cdc-com-debezium): capturar mudanças do banco em tempo quase real (CDC) para alimentar o lakehouse sem recarregar tudo.

@@ -79,4 +79,126 @@ flowchart LR
     O[Origem: OLTP / API / eventos] -->|append, sem transformar| B[🥉 Bronze<br/>dado cru, fiel à origem]
     B -->|limpa, tipa, dedup, PII| S[🥈 Silver<br/>confiável e tratado]
     S -->|agrega, modela p/ negócio| G[🥇 Gold<br/>métricas prontas]
-    G --> BI[BI / Meta
+    G --> BI[BI / Metabase]
+    G --> ML[Feature engineering cap 13]
+```
+
+| Camada | O que é | Regra | Por que existe |
+|---|---|---|---|
+| **Bronze** | dado cru, igual à origem | **append-only**, nunca sobrescreve | preservar histórico e permitir reprocessar do zero se uma regra estiver errada |
+| **Silver** | limpo, tipado, deduplicado, PII tratada | MERGE por chave, CAST, NOT NULL | ponto único onde a qualidade técnica é garantida |
+| **Gold** | métricas e agregados de negócio | `CREATE OR REPLACE` (recalculável) | servir BI e ML sem expor a complexidade das camadas abaixo |
+
+**Por que isso resolve um problema real:** suponha que a regra de cálculo de "velocidade média" (gold) estava errada. Como o **bronze guarda o dado cru intacto**, você corrige a regra e **reprocessa silver→gold** sem precisar reextrair nada da origem (que pode nem ter mais o dado). Se tudo fosse uma transformação só, um bug na agregação te obrigaria a reingerir tudo.
+
+### 4. PII e governança — por que a Silver é o ponto de enforcement
+
+Dados de cliente (`nome`, `email`, `cidade`) e GPS de entregadores são **PII** (dados pessoais). Sob LGPD/GDPR, eles não podem circular livremente para consumo.
+
+A decisão de design: **bronze pode ter PII íntegro** (é a cópia fiel da origem, serve para auditoria), mas **a partir da silver o dado já sai protegido**. Técnicas usadas no `silver_transform.py`:
+
+- **Hashing** (`SHA-256 + salt`) no email → permite rastrear o mesmo cliente entre tabelas sem expor o email.
+- **Generalização** → guardar o estado em vez da cidade, reduzir a precisão do GPS (5 casas decimais → 2).
+- **Supressão** → remover `nome` se não tem valor analítico.
+
+**Por que aqui e não no bronze:** se você anonimizasse já no bronze, perderia a capacidade de auditar a origem. Por que não deixar para o gold? Porque entre silver e gold o dado já é compartilhado por vários consumidores — protegê-lo cedo evita vazamento. A silver é a fronteira natural.
+
+---
+
+## Etapa 1 — Configurar Delta Lake no ambiente
+
+### Contexto
+Spark sozinho lê/grava Parquet, mas não entende o `_delta_log`. Precisamos plugar a extensão Delta.
+
+### O que fazer
+No docker-compose, configurar o Spark com o pacote `delta-spark` e duas configs que registram o Delta como motor de tabela do Spark:
+
+```python
+.config("spark.sql.extensions", "io.delta.sql.DeltaSparkSessionExtension")
+.config("spark.sql.catalog.spark_catalog", "org.apache.spark.sql.delta.catalog.DeltaCatalog")
+```
+
+A primeira ativa a sintaxe Delta (MERGE, time travel); a segunda faz o catálogo do Spark entender tabelas Delta. MinIO é o storage (`s3a://`), Hive Metastore é o catálogo, e o Trino ganha o connector Delta para consultar via SQL.
+
+### ⚠️ Armadilhas
+- **Versões.** Delta 3.x exige Spark 3.5.x. Misturar versões dá erros obscuros de classe não encontrada.
+- **Connector do Trino.** O connector Delta é *diferente* do connector Hive — configure `delta.properties` no catálogo, não `hive.properties`.
+- **Credenciais S3A.** Sem `fs.s3a.access.key`/`secret.key`/`endpoint` apontando para o MinIO, o Spark não acha o storage.
+
+---
+
+## Etapa 2 — Implementar a camada Bronze
+
+### Contexto
+Job Spark que lê da origem (aqui, um JSON simulando a API logística) e grava como tabela Delta no bronze, **sem transformar**.
+
+### Decisões de design
+- **Append-only.** Cada execução *adiciona* registros, nunca sobrescreve. É o que garante histórico e reprocessamento.
+- **Colunas de metadado.** `_ingested_at TIMESTAMP` e `_source VARCHAR` para rastreabilidade — você sempre sabe quando e de onde um registro veio.
+- **Particionar por data de ingestão.** Facilita reprocessar "só o dia X" sem varrer tudo.
+
+### O que fazer
+`spark/jobs/bronze_ingest.py`: lê a origem, adiciona os metadados, grava Delta com `mode("append")` em `s3a://datalake/bronze/entregas`. (Código comentado no SOLUTION.)
+
+### ⚠️ Armadilhas
+- Usar `mode("overwrite")` no bronze mata o histórico — é o erro que quebra todo o propósito da camada.
+
+---
+
+## Etapa 3 — Implementar a camada Silver
+
+### Contexto
+Lê o bronze, aplica limpeza, deduplicação por chave e pseudonimização de PII, grava no silver com **MERGE**.
+
+### Decisões de design
+- **MERGE por chave natural** (`entrega_id`). O bronze é append-only, então a mesma entrega pode aparecer em várias ingestões. O MERGE faz upsert: atualiza se já existe, insere se é nova → silver fica **deduplicada e idempotente**.
+- **Pseudonimização de PII** (ver conceito 4).
+- **CAST e filtro de NOT NULL.** Silver rejeita o que não passa nas regras técnicas (ex.: `entrega_id` nulo).
+
+### Exemplo trabalhado — por que MERGE e não append+distinct
+Imagine duas ingestões bronze da entrega `E-100`: na 1ª o status é `em_rota`, na 2ª virou `entregue`. Se a silver fizesse só `append`, teríamos **duas linhas** de `E-100`. Um `SELECT DISTINCT` não resolve (as linhas são *diferentes*). O MERGE com chave `entrega_id` mantém **uma linha**, com o estado mais recente. Esse é exatamente o padrão que o CDC do cap 11 vai reusar.
+
+### O que fazer
+`spark/jobs/silver_transform.py`: lê bronze Delta, limpa/pseudonimiza, e faz `DeltaTable.merge(...)` por `entrega_id`. Na primeira execução (tabela ainda não existe) grava direto; nas seguintes, faz MERGE.
+
+### ⚠️ Armadilhas
+- Esquecer a condição de chave correta no MERGE → duplica ou sobrescreve o registro errado.
+- Pseudonimizar sem `salt` → hashes viram um dicionário reversível (qualquer um faz SHA-256 de uma lista de emails e cruza).
+
+---
+
+## Etapa 4 — Implementar a camada Gold
+
+### Contexto
+Marts de consumo: métricas por status, por região, por dia. Consumidas por BI (Trino + Metabase) e pelo feature engineering do cap 13.
+
+### Decisões de design
+- **`CREATE OR REPLACE` / `mode("overwrite")`.** Gold é *derivada* — pode ser recalculada a qualquer momento a partir da silver. Sobrescrever é idempotente e simples aqui (diferente do bronze).
+
+### O que fazer
+`spark/jobs/gold_marts.py`: lê silver, faz `groupBy(...).agg(...)`, grava Delta no gold com overwrite. (Código no SOLUTION.)
+
+---
+
+## ✅ Checklist final
+
+Operacional (o ambiente roda):
+
+- [ ] Tabelas Delta criadas em bronze, silver e gold no MinIO
+- [ ] Bronze é append-only (COUNT cresce a cada ingestão)
+- [ ] Silver é deduplicada (MERGE funciona; COUNT = COUNT distinct da chave)
+- [ ] PII pseudonimizada na silver (email hasheado, GPS reduzido)
+- [ ] Gold consultável via Trino
+- [ ] Time travel funciona: `SELECT * FROM tabela VERSION AS OF N`
+- [ ] VACUUM remove arquivos antigos sem corromper a tabela
+
+Compreensão (você entendeu — responda sem olhar):
+
+- [ ] **Por que** uma escrita Delta que falha no meio não corrompe a tabela? (dica: `_delta_log`)
+- [ ] Se a regra de negócio do gold estiver errada, **de onde** você reprocessa — e por quê isso só é possível por causa de qual camada?
+- [ ] Por que a pseudonimização fica na **silver** e não no bronze nem no gold?
+- [ ] Qual a diferença prática entre `append` (bronze) e `MERGE` (silver), e o que aconteceria se você trocasse os dois?
+
+## A dor que sobra
+
+O lakehouse é confiável, mas ainda **batch**: os dados só atualizam quando o job roda. Para detectar fraude ou monitorar entregas, a empresa precisa de dados em *near-real-time*. → [Capítulo 11: CDC com Debezium](../11-cdc-com-debezium) captura mudanças do OLTP continuamente — e vai reusar o MERGE que você aprendeu aqui.

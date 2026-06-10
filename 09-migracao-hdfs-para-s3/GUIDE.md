@@ -50,4 +50,48 @@ Expandir docker-compose com: MinIO (porta 9000 API, 9001 console), Trino (porta 
 
 ### ⚠️ Armadilhas
 - MinIO precisa de `MINIO_ROOT_USER` e `MINIO_ROOT_PASSWORD` explícitos.
-- Trino precisa de catalog config em `trino/catalog
+- Trino precisa de catalog config em `trino/catalog/hive.properties` apontando para o metastore.
+- S3a connector do Spark precisa de JARs extras (`hadoop-aws`, `aws-java-sdk-bundle`).
+
+---
+
+## Etapa 2 — Criar job de migração HDFS → MinIO
+
+### Contexto
+Job Spark que lê dados Parquet do HDFS e escreve no MinIO, mantendo a mesma estrutura de partições. Após validação, os dados no HDFS podem ser removidos.
+
+### Decisões de design
+- *Spark como motor de cópia*: não é um simples `distcp` — o job pode aplicar compactação e reparticionamento durante a migração.
+- *Validação de contagem*: após cópia, comparar COUNT entre HDFS e MinIO.
+- *Não deletar HDFS imediatamente*: manter como fallback até validação completa.
+
+### O que fazer
+`spark/jobs/migrate_hdfs_to_s3.py`: lê Parquet do HDFS, escreve no MinIO (s3a://bucket/path), valida contagens, loga resultados.
+
+---
+
+## Etapa 3 — Configurar Trino para consultar MinIO
+
+### O que fazer
+`trino/catalog/hive.properties` apontando para o Hive Metastore, com endpoint S3 configurado para MinIO. Testar com `SELECT * FROM hive.lake.entregas LIMIT 10` via Trino CLI.
+
+---
+
+## ✅ Checklist final
+
+- [ ] MinIO sobe e console acessível em localhost:9001
+- [ ] Job de migração copia dados do HDFS para MinIO sem perda
+- [ ] COUNT no MinIO = COUNT no HDFS
+- [ ] Trino consulta dados no MinIO via SQL
+- [ ] Spark continua consultando dados (agora via s3a://)
+
+Compreensão (você entendeu — responda sem olhar):
+
+- [ ] O que "desacoplar storage de compute" permite que o HDFS não permitia? Dê o exemplo do pico de Black Friday.
+- [ ] Quais são os dois tradeoffs do object storage frente ao HDFS?
+- [ ] O que é tiering hot/cold e por que a migração não precisa ser big-bang?
+- [ ] Como Trino faz um JOIN entre o lake e o Postgres sem mover os dados para um lugar comum?
+
+## A dor que sobra
+
+Os dados estão no MinIO/S3, mas são "apenas arquivos" — sem transações, sem schema enforcement, sem time travel. Um job que falha no meio de uma escrita pode deixar dados corrompidos. O capítulo 10 adiciona Delta Lake para resolver: transações ACID sobre arquivos.

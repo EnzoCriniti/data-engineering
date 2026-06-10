@@ -55,4 +55,4 @@ docker compose up -d
 
 ## Próximo passo
 
-[Capítulo 13](../13-base-ml-fraude): preparar uma base de features combinando os sinais bat
+[Capítulo 13](../13-base-ml-fraude): preparar uma base de features combinando os sinais batch, CDC e streaming para um modelo de fraude.

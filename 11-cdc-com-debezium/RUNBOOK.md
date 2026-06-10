@@ -58,4 +58,4 @@ docker compose up -d
 
 ## Próximo passo
 
-[Capítulo 12](../12-streaming-kappa): processar esses eventos com janelas e estado para métricas a
+[Capítulo 12](../12-streaming-kappa): processar esses eventos com janelas e estado para métricas ao vivo.

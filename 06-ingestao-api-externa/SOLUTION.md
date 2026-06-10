@@ -172,3 +172,21 @@ services:
     depends_on:
       - api-mock
 ```
+
+## Validações
+
+```bash
+docker compose up -d api-mock
+docker compose --profile jobs run extractor          # 1ª carga
+docker compose --profile jobs run extractor          # 2ª carga: deve ser idempotente
+
+# Conferir que não houve duplicação (UPSERT por chave)
+docker exec -it p06-oltp psql -U nuvemstore -d nuvemstore \
+  -c "SELECT COUNT(*) FROM staging_entregas;"
+# Deve bater com o número de registros no entregas.json
+
+# Script compila
+python -m py_compile extractor/extract.py
+```
+
+Esperado: rodar o extractor duas vezes mantém o mesmo `COUNT` em `staging_entregas` (o `ON CONFLICT` atualiza em vez de inserir duplicado), e o total iguala o número de entregas no JSON.

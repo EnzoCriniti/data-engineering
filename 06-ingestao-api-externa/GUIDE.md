@@ -60,4 +60,42 @@ Script Python que consome a API, valida o payload e grava em staging no Postgres
 
 ### Decisões de design
 - *Retry com backoff*: `time.sleep(2 ** attempt)` para falhas transitórias (HTTP 429, 503).
-- *Validação de schema*: verific
+- *Validação de schema*: verificar que campos esperados existem antes de inserir. Logar campos extras sem falhar (forward-compatibility).
+- *Staging SQL*: `CREATE TABLE IF NOT EXISTS staging_entregas (...)` com dados tipados a partir do JSON.
+- *UPSERT por `entrega_id`*: `INSERT ... ON CONFLICT (entrega_id) DO UPDATE` garante idempotência.
+
+### O que fazer
+`extractor/extract.py`: faz GET na API, parseia JSON, valida campos obrigatórios, insere em staging_entregas com UPSERT. Loga contagens.
+
+### ⚠️ Armadilhas
+- Não tratar HTTP 429: o extractor pode ser bloqueado pela API.
+- Carregar todo o JSON em memória: para APIs reais com milhões de registros, usar streaming (response.iter_lines ou paginação).
+- Não logar o status code de cada request: debugging impossível em produção.
+
+---
+
+## Etapa 3 — Criar o schema de staging (`extractor/staging.sql`)
+
+### O que fazer
+DDL da tabela `staging_entregas` com colunas mapeadas do JSON, chave primária em `entrega_id`, `CREATE TABLE IF NOT EXISTS`.
+
+---
+
+## ✅ Checklist final
+
+- [ ] Mock da API serve JSON corretamente
+- [ ] Extractor roda e popula staging_entregas sem erro
+- [ ] Rodar extractor duas vezes não duplica registros (UPSERT)
+- [ ] COUNT de staging_entregas = COUNT de entregas no JSON
+- [ ] Script compila: `python -m py_compile extractor/extract.py`
+
+Compreensão (você entendeu — responda sem olhar):
+
+- [ ] Liste quatro formas em que uma API externa é menos confiável que um banco interno, e o que o extractor faz para cada uma.
+- [ ] Por que backoff **exponencial** e não um sleep fixo? O que acontece com a API se você martelar de 2 em 2 segundos?
+- [ ] Conte o cenário do re-run da janela: por que `INSERT` puro duplica e `ON CONFLICT DO UPDATE` não?
+- [ ] Por que gravar em **staging** e não direto no modelo final?
+
+## A dor que sobra
+
+Agora existem três jobs independentes: extração OLTP, extração API externa, e transformação dbt. Quem coordena a ordem? Quem retenta se a API cai? Quem avisa se o dbt falhou? O capítulo 07 introduz Airflow para orquestrar.

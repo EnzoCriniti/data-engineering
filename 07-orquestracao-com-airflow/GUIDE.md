@@ -71,4 +71,38 @@ A DAG coordena: (1) ingerir OLTP, (2) ingerir API externa, (3) rodar dbt. As ing
 - *Schedule diário*: `schedule_interval='@daily'`. Simula um pipeline batch recorrente.
 - *Retries*: 2 retries com delay de 5 minutos para tarefas de ingestão (falhas de rede são transitórias).
 - *Dependências*: `[ingest_oltp, ingest_api] >> run_dbt`. Notação bitshift do Airflow.
-- *Catchup desabilitado*: `catchup=False` para não reprocessar todo o histórico ao ati
+- *Catchup desabilitado*: `catchup=False` para não reprocessar todo o histórico ao ativar a DAG.
+
+### O que fazer
+`airflow/dags/nuvemstore_daily.py` com três tasks: `ingest_oltp` (BashOperator chamando o pipeline de extração), `ingest_api` (BashOperator chamando o extractor), `run_dbt` (BashOperator chamando `dbt run && dbt test`).
+
+### ⚠️ Armadilhas
+- `BashOperator` sem `set -e` no script: falhas silenciosas — o operador retorna success mesmo se um comando intermediário falhou.
+- Importar módulos pesados no topo do arquivo da DAG: o scheduler parseia todos os DAGs periodicamente — imports lentos degradam performance.
+- Não definir `start_date` com data fixa: usar `datetime.now()` faz a DAG recriar runs fantasmas.
+
+### 📚 Para se aprofundar
+- [Airflow Best Practices](https://airflow.apache.org/docs/apache-airflow/stable/best-practices.html) — padrões recomendados.
+- [Airflow TaskFlow API](https://airflow.apache.org/docs/apache-airflow/stable/tutorial/taskflow.html) — abordagem moderna com decorators.
+
+---
+
+## ✅ Checklist final
+
+- [ ] `docker compose up -d` sobe Airflow com UI acessível em localhost:8080
+- [ ] DAG `nuvemstore_daily` aparece na UI
+- [ ] Trigger manual executa as 3 tasks em ordem correta
+- [ ] Ingestões rodam em paralelo; dbt espera ambas
+- [ ] Logs de cada task são acessíveis pela UI
+- [ ] Re-trigger da mesma run produz o mesmo resultado (idempotência)
+
+Compreensão (você entendeu — responda sem olhar):
+
+- [ ] O que a propriedade **acíclica** garante? Dê um exemplo de aresta que criaria um ciclo na DAG da NuvemStore.
+- [ ] Por que Airflow deve **orquestrar** e não **processar** dados pesados? O que indica que a arquitetura está errada?
+- [ ] Por que backfill só é seguro se as tarefas forem idempotentes? O que `INSERT` puro causaria num backfill de meio mês?
+- [ ] Por que `start_date` deve ser data fixa e não `datetime.now()`?
+
+## A dor que sobra
+
+O pipeline inteiro opera em batch — dados só ficam disponíveis após a execução diária. Volumes crescentes tornam o full reload cada vez mais lento. O capítulo 08 muda de paradigma: sai de tabelas de banco para arquivos distribuídos em um data lake com Spark.

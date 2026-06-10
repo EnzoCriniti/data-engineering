@@ -56,4 +56,10 @@ Evite quando o problema e pequeno e um warehouse simples resolve. Lakehouse adic
 
 ## Como isso aparece no projeto
 
-O capítulo 10 transforma o lake migrado para S3/MinIO em uma plataforma mais confiável. A camada gold passa a ser base para BI e para consumo histórico, enquanto bronze e silver sustentam reprocessamento e qualidade
+O capítulo 10 transforma o lake migrado para S3/MinIO em uma plataforma mais confiável. A camada gold passa a ser base para BI e para consumo histórico, enquanto bronze e silver sustentam reprocessamento e qualidade.
+
+## 📚 Referências
+
+- [Delta Lake Documentation](https://docs.delta.io/latest/index.html) — referência oficial com ACID, time travel e MERGE.
+- [Apache Iceberg Documentation](https://iceberg.apache.org/docs/latest/) — formato lakehouse alternativo com foco em evolução de schema e partição.
+- [Databricks Medallion Architecture](https://www.databricks.com/glossary/medallion-architecture) — descrição oficial do padrão bronze/silver/gold.

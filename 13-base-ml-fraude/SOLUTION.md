@@ -239,4 +239,36 @@ def validate_pit(conn):
         cur.execute("""
             WITH recalculo_com_leakage AS (
                 SELECT 
-                    f.pagamento_id
+                    f.pagamento_id,
+                    f.pedidos_cliente_ultimos_30d as feature_original,
+                    COUNT(h.pedido_id) AS contagem_com_leakage
+                FROM ml.fraude_pagamento_features f
+                JOIN pagamento p ON p.pagamento_id = f.pagamento_id
+                JOIN pedido ped ON ped.pedido_id = p.pedido_id
+                LEFT JOIN pedido h ON h.cliente_id = ped.cliente_id
+                -- Simulando um bug onde o dev esqueceu do filtro PIT
+                WHERE h.data_pedido >= now() - INTERVAL '30 days'
+                GROUP BY 1, 2
+            )
+            SELECT count(*) FROM recalculo_com_leakage 
+            WHERE feature_original != contagem_com_leakage
+        """)
+        
+        diferencas = cur.fetchone()[0]
+        log.info(f"Diferença entre PIT e Query Vazada (com NOW): {diferencas} linhas.")
+        
+        if diferencas == 0:
+            log.warning("⚠️ ALERTA: Nenhuma diferença entre PIT e Leakage.")
+            log.warning("Isso significa que nenhum cliente comprou DEPOIS da data da feature.")
+            log.warning("Se você acabou de rodar o seeder, é normal. Se o banco tem histórico longo, você pode ter um bug de vazamento.")
+        else:
+            log.info("✅ OK: A feature PIT é diferente de uma query vazada. O isolamento temporal está funcionando.")
+
+def main():
+    conn = psycopg2.connect(DB_URL)
+    validate_pit(conn)
+    conn.close()
+
+if __name__ == "__main__":
+    main()
+```

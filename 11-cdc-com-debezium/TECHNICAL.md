@@ -57,4 +57,11 @@ Evite CDC quando a origem não tem log confiável, quando a ordem de eventos nã
 
 ## Como isso aparece no projeto
 
-O capítulo 11 conecta a origem transacional ao mundo de eventos. O lakehouse do capítulo 10 vira destino natural, porque suporta `MERGE` e histórico para absorver mudanças
+O capítulo 11 conecta a origem transacional ao mundo de eventos. O lakehouse do capítulo 10 vira destino natural, porque suporta `MERGE` e histórico para absorver mudanças.
+
+## 📚 Referências
+
+- [Debezium Documentation](https://debezium.io/documentation/) — referência oficial com conectores, configuração e troubleshooting.
+- [Kafka Connect Documentation](https://kafka.apache.org/documentation/#connect) — framework de conectores para ingestão e saída de dados.
+- [Redpanda Documentation](https://docs.redpanda.com/) — plataforma Kafka-compatible com foco em simplicidade operacional.
+- [PostgreSQL Logical Replication](https://www.postgresql.org/docs/current/logical-replication.html) — como o Postgres expõe mudanças via WAL.

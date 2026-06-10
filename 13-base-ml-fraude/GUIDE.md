@@ -89,4 +89,30 @@ Script com 4 estágios: (1) buscar pagamentos sem features calculadas, (2) calcu
 ## Etapa 3 — Implementar validação de PIT (`feature_builder/validate_pit.py`)
 
 ### Contexto
-Script que valida que nenhuma feature inclui dados posteriores ao `feature_ts`. Amostra N paga
+Script que valida que nenhuma feature inclui dados posteriores ao `feature_ts`. Amostra N pagamentos e recalcula features com PIT correto, comparando com os valores armazenados.
+
+### O que fazer
+Para cada pagamento na amostra: recalcular `pedidos_cliente_ultimos_30d` com filtro PIT correto, comparar com o valor armazenado. Se diferir, há violação. Também testar "leakage check": recalcular com `NOW()` — se bater com o armazenado, a feature pode estar usando data errada.
+
+---
+
+## ✅ Checklist final
+
+- [ ] Feature table criada no Postgres com schema correto
+- [ ] Feature builder roda e popula a tabela sem erro
+- [ ] Rodar duas vezes não muda contagens (UPSERT idempotente)
+- [ ] `validate_pit.py` retorna 0 violações
+- [ ] Nenhuma feature usa `NOW()` — todas ancoradas em `feature_ts`
+- [ ] Features de streaming são NULL quando dados de GPS não existem (graceful degradation)
+- [ ] Label e score começam NULL (preenchidos separadamente)
+
+Compreensão (você entendeu — responda sem olhar):
+
+- [ ] Por que a feature "recusas nos últimos 30 dias" usa `<` e não `<=` em relação a `feature_ts`? O que `<=` vazaria?
+- [ ] Conte o caso do modelo de 99% que falha em produção: qual feature vazou e por que ela some na inferência?
+- [ ] Diferencie feature **table** de feature **store**.
+- [ ] O que é training-serving skew e como ele degrada o modelo mesmo sem leakage?
+
+## A dor que sobra
+
+Este é o capítulo final da trilha. A plataforma evoluiu de um OLTP isolado para um ecossistema completo: warehouse, lake, lakehouse, CDC, streaming e ML features. O que falta para uma plataforma de produção: observabilidade, qualidade de dados com contratos, lineage operacional, catálogo de dados, e monitoramento de modelo. Essas são as fronteiras do roadmap futuro.
