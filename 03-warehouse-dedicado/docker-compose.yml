@@ -1,0 +1,60 @@
+services:
+  oltp:
+    image: postgres:16
+    container_name: p03-oltp
+    ports:
+      - "${OLTP_PORT:-5435}:5432"
+    environment:
+      POSTGRES_DB: nuvemstore
+      POSTGRES_USER: nuvemstore
+      POSTGRES_PASSWORD: nuvemstore
+    volumes:
+      - oltp-data:/var/lib/postgresql/data
+      - ../00-modelagem-transacional/ddl/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nuvemstore"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  warehouse:
+    image: postgres:16
+    container_name: p03-warehouse
+    ports:
+      - "${WH_PORT:-5436}:5432"
+    environment:
+      POSTGRES_DB: nuvemstore_warehouse
+      POSTGRES_USER: warehouse
+      POSTGRES_PASSWORD: warehouse
+    volumes:
+      - wh-data:/var/lib/postgresql/data
+      - ./warehouse/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U warehouse"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  seeder:
+    build: ../00-modelagem-transacional/seed
+    container_name: p03-seeder
+    environment:
+      DATABASE_URL: postgresql://nuvemstore:nuvemstore@oltp:5432/nuvemstore
+    depends_on:
+      oltp: { condition: service_healthy }
+    profiles: [jobs]
+
+  migrate:
+    build: ./warehouse
+    container_name: p03-migrate
+    environment:
+      OLTP_URL: postgresql://nuvemstore:nuvemstore@oltp:5432/nuvemstore
+      WAREHOUSE_URL: postgresql://warehouse:warehouse@warehouse:5432/nuvemstore_warehouse
+    depends_on:
+      oltp: { condition: service_healthy }
+      warehouse: { condition: service_healthy }
+    profiles: [jobs]
+
+volumes:
+  oltp-data:
+  wh-data:

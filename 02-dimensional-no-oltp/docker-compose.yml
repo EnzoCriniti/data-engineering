@@ -1,0 +1,31 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: p02-postgres
+    ports:
+      - "${PG_PORT:-5433}:5432"
+    environment:
+      POSTGRES_DB: ${PG_DB:-nuvemstore}
+      POSTGRES_USER: ${PG_USER:-nuvemstore}
+      POSTGRES_PASSWORD: ${PG_PASS:-nuvemstore}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ../00-modelagem-transacional/ddl/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - ./ddl/analytics.sql:/docker-entrypoint-initdb.d/02-analytics.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${PG_USER:-nuvemstore}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  seeder:
+    build: ../00-modelagem-transacional/seed
+    container_name: p02-seeder
+    environment:
+      DATABASE_URL: postgresql://${PG_USER:-nuvemstore}:${PG_PASS:-nuvemstore}@postgres:5432/${PG_DB:-nuvemstore}
+    depends_on:
+      postgres: { condition: service_healthy }
+    profiles: [jobs]
+
+volumes:
+  pgdata:

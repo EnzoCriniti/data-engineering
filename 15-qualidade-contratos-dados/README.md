@@ -4,7 +4,7 @@
 
 ## Cenário de negócio
 
-A NuvemStore tomou uma decisão de produto com base num gráfico de receita que, descobriu-se depois, estava errado: a API da transportadora passou a mandar `valor_frete` em centavos em vez de reais, e ninguém percebeu por uma semana. O número inflou 100x num mart e ninguém tinha um alarme.
+A área de Logística cruza as ocorrências da transportadora com os pedidos para acompanhar entregas. Se o parceiro passar a enviar um status fora do [contrato da API](../06-ingestao-api-externa/API_SPEC.md), o indicador pode omitir entregas ou classificá-las na categoria errada. Validar o status na entrada permite apontar a mudança antes de publicar o indicador. Na demonstração deste capítulo, o mesmo princípio é aplicado às tabelas gold consultadas pelo Trino.
 
 A lição: confiar que a fonte manda o dado certo não é estratégia. A plataforma precisa de **portões de qualidade** — validações que rodam *antes* do dado entrar nas camadas confiáveis, e que falham alto quando o contrato é violado.
 

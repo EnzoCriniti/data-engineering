@@ -9,13 +9,13 @@ Um único Postgres com dois schemas: `public` (tabelas OLTP do cap. 00) e `analy
 ## Pré-requisitos
 
 - Docker e Docker Compose.
-- Porta `5434` livre (configurável no `.env`).
+- Porta `5433` livre (ajustável com `PG_PORT` no `.env`).
 
 ## Subir o ambiente
 
 ```bash
 cp .env.example .env
-docker compose up -d db
+docker compose up -d --wait postgres
 docker compose run --rm seeder
 ```
 
@@ -24,7 +24,7 @@ O Postgres sobe já com os dois schemas: o `public` vem do `schema.sql` do cap. 
 Saída esperada do seeder:
 
 ```text
-Seed concluido: 250 clientes, 1200 pedidos.
+Seed concluído: 250 clientes, 1200 pedidos.
 ```
 
 ## Conferir
@@ -32,9 +32,9 @@ Seed concluido: 250 clientes, 1200 pedidos.
 Verifique que os dois schemas coexistem no mesmo banco:
 
 ```bash
-docker compose exec db psql -U app -d nuvemstore -c "\dn"
-docker compose exec db psql -U app -d nuvemstore -c "\dt analytics.*"
-docker compose exec db psql -U app -d nuvemstore -c "SELECT count(*) FROM public.pedido;"
+docker compose exec postgres psql -U nuvemstore -d nuvemstore -c "\dn"
+docker compose exec postgres psql -U nuvemstore -d nuvemstore -c "\dt analytics.*"
+docker compose exec postgres psql -U nuvemstore -d nuvemstore -c "SELECT count(*) FROM public.pedido;"
 ```
 
 Você verá os schemas `public` e `analytics`, as quatro tabelas dimensionais (vazias) e a contagem de pedidos da origem populada.
@@ -43,16 +43,16 @@ Você verá os schemas `public` e `analytics`, as quatro tabelas dimensionais (v
 
 | Variável | Default | Efeito |
 |---|---|---|
-| `DB_PORT` | `5434` | Porta exposta no host |
-| `SEED_CUSTOMERS` | `250` | Clientes gerados |
-| `SEED_ORDERS` | `1200` | Pedidos gerados |
+| `PG_PORT` | `5433` | Porta exposta no host |
+| `SEED_CLIENTES` | `250` | Clientes gerados |
+| `SEED_PEDIDOS` | `1200` | Pedidos gerados |
 | `SEED_RESET` | `true` | Limpa antes de popular (idempotência) |
 
 ## Recomeçar do zero
 
 ```bash
 docker compose down -v
-docker compose up -d db
+docker compose up -d --wait postgres
 docker compose run --rm seeder
 ```
 

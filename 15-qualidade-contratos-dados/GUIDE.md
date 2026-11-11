@@ -33,7 +33,7 @@ A plataforma desta altura já não tem mais DuckDB nem marts soltos: o estado co
 
 Isso é complementar ao `dbt test` do cap 05 (que valida modelos no auge da fase batch) e à validação que faria sentido na ingestão. Aqui validamos o produto final consolidado: se o gold passou, o dashboard pode confiar.
 
-**Exemplo trabalhado — o frete em centavos.** A transportadora muda a unidade de `valor_frete` de reais para centavos: um frete de R$ 15,00 entra como `1500`. Sem contrato, esse valor flui pela pipeline até o gold de receita, infla o total em 100x, e o gráfico mente por uma semana. Com uma expectativa de faixa no gold (`valor` entre 0 e um máximo plausível), o portão falha na primeira execução pós-mudança: o relatório aponta as linhas que violam o teto. O erro vira um alarme imediato e específico, não uma decisão errada descoberta tarde. A expectativa não precisou prever *qual* mudança aconteceria — só precisou codificar o que era um valor plausível.
+**Exemplo trabalhado — mudança no status de uma entrega.** O [contrato da transportadora](../06-ingestao-api-externa/API_SPEC.md) define quatro status aceitos. Se a API trocar `em_transito` por `em_rota`, um indicador que agrupa pelo valor original pode deixar essas entregas de fora. Uma validação do conjunto aceito identifica o primeiro lote afetado. No gold, aplique o mesmo princípio a regras como o conjunto aceito de status de pagamento.
 
 ### Schema drift
 

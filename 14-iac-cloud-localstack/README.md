@@ -1,6 +1,6 @@
 # Capítulo 14 — Infra como código: deploy de nuvem com Terraform (LocalStack) 🟡
 
-> **De onde viemos:** os capítulos 00–13 entregam uma plataforma completa — OLTP, warehouse, ELT, dbt, Airflow, lake/lakehouse, CDC, streaming e base de ML. Tudo roda em Docker, no laptop, e tudo é **criado à mão**: cada `docker compose up`, cada bucket no MinIO, cada banco. A dor que sobra é a primeira pergunta de qualquer entrevista de produção: *"como isso sobe na nuvem, de forma reproduzível, sem alguém clicar em console?"*
+> **De onde viemos:** o lakehouse reúne o histórico que alimenta relatórios, logística e preparação de dados para fraude. Recriar os ambientes exige reproduzir as configurações de armazenamento que esses consumidores compartilham.
 
 ## Cenário de negócio
 

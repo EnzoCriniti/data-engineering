@@ -1,0 +1,26 @@
+services:
+  oltp:
+    mem_limit: 256m
+    cpus: "0.25"
+  warehouse:
+    mem_limit: 256m
+    cpus: "0.25"
+  seeder:
+    mem_limit: 192m
+    cpus: "0.25"
+    environment:
+      SEED_CLIENTES: "50"
+      SEED_PEDIDOS: "200"
+  simulador:
+    mem_limit: 192m
+    cpus: "0.25"
+    environment:
+      SIM_PEDIDOS: "5"
+  pipeline:
+    mem_limit: 320m
+    cpus: "0.5"
+  agendador:
+    mem_limit: 320m
+    cpus: "0.5"
+    environment:
+      SIM_PEDIDOS: "5"

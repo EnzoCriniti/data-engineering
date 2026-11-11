@@ -22,7 +22,7 @@ A separação física faz analytics parar de competir com o checkout. O job `mig
 
 ```bash
 cp .env.example .env
-docker compose up -d oltp warehouse
+docker compose up -d --wait oltp warehouse
 ```
 
 Os schemas são aplicados automaticamente na inicialização: o `oltp` recebe o `schema.sql` do cap 00, o `warehouse` recebe o `warehouse/schema.sql` (modelo dimensional). Aguarde os healthchecks ficarem saudáveis:
@@ -37,7 +37,7 @@ docker compose ps
 docker compose run --rm seeder
 ```
 
-Saída esperada: `Seed concluido: 250 clientes, 1200 pedidos.`
+Saída esperada: `Seed concluído: 250 clientes, 1200 pedidos.`
 
 ## Passo 3 — Migrar para o warehouse
 
@@ -48,7 +48,9 @@ docker compose run --rm migrate
 Saída esperada (números podem variar conforme a seed):
 
 ```text
-Migracao concluida: 250 clientes, 56 produtos, ~2600 itens vendidos.
+Origem:  <contagem> itens, receita=<total>
+Destino: <contagem> itens, receita=<total>
+Reconciliação OK
 ```
 
 O que aconteceu: o job truncou as tabelas analíticas, carregou `dim_cliente`, `dim_produto` e `dim_tempo`, e então populou `fct_vendas` resolvendo cada chave natural para a surrogate key correspondente.
@@ -56,7 +58,7 @@ O que aconteceu: o job truncou as tabelas analíticas, carregou `dim_cliente`, `
 ## Passo 4 — Conferir o resultado no warehouse
 
 ```bash
-docker compose exec warehouse psql -U analytics -d warehouse -c "
+docker compose exec warehouse psql -U warehouse -d nuvemstore_warehouse -c "
   SELECT dp.categoria, SUM(f.valor_total) AS receita
   FROM analytics.fct_vendas f
   JOIN analytics.dim_produto dp ON dp.sk_produto = f.sk_produto
@@ -71,12 +73,12 @@ Compare a receita total nas duas pontas — devem bater:
 
 ```bash
 # origem (OLTP)
-docker compose exec oltp psql -U app -d nuvemstore -t -c "
+docker compose exec oltp psql -U nuvemstore -d nuvemstore -t -c "
   SELECT ROUND(SUM(i.quantidade*i.preco_unitario),2)
-  FROM item_pedido i JOIN pedido p ON p.id=i.pedido_id
+  FROM item_pedido i JOIN pedido p ON p.pedido_id=i.pedido_id
   WHERE p.status <> 'cancelado';"
 # destino (warehouse)
-docker compose exec warehouse psql -U analytics -d warehouse -t -c "
+docker compose exec warehouse psql -U warehouse -d nuvemstore_warehouse -t -c "
   SELECT ROUND(SUM(valor_total),2) FROM analytics.fct_vendas;"
 ```
 
@@ -84,7 +86,7 @@ docker compose exec warehouse psql -U analytics -d warehouse -t -c "
 
 ```bash
 docker compose down -v
-docker compose up -d oltp warehouse
+docker compose up -d --wait oltp warehouse
 docker compose run --rm seeder
 docker compose run --rm migrate
 ```

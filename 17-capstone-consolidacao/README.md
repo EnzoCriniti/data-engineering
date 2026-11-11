@@ -1,6 +1,6 @@
-# Capítulo 17 — Capstone: a plataforma como um todo 🟢
+# Capítulo 17 — Capstone: a plataforma como um todo
 
-> **De onde viemos:** dezessete capítulos depois, a NuvemStore saiu de um único banco OLTP para uma plataforma de dados completa — com warehouse, lake, lakehouse, streaming, CDC, base de ML, infra como código, qualidade e observabilidade. Cada capítulo nasceu de uma dor concreta do anterior. Este capítulo final não adiciona tecnologia nova: ele **amarra tudo numa história única, mostra a arquitetura consolidada e os resultados visíveis**.
+> **Status: documentado.** Este capítulo apresenta a arquitetura final planejada e reúne as evidências conforme cada fase é validada. A primeira execução batch está registrada no [diário da etapa 1](../docs/diario/etapa-1.md#provas).
 
 ## Por que um capstone
 
@@ -8,17 +8,15 @@ Os capítulos 00–16 formam uma trilha linear: cada um resolve uma dor e cria a
 
 ## A jornada inteira em uma página
 
-| Fase | Capítulos | Dor que motivou | O que entrou |
+| Fase | Capítulos | Pergunta da empresa | Evidência |
 | --- | --- | --- | --- |
-| Fundação | 00–03 | "Onde o dado nasce e por que analytics não pode viver no OLTP?" | OLTP 3NF, modelagem dimensional, separação física do warehouse |
-| Batch analytics | 04–06 | "Como mover e transformar dados de forma reproduzível e de múltiplas fontes?" | ELT com Python/DuckDB, dbt, ingestão de API externa |
-| Operação | 07 | "Quem coordena, repete e recupera os jobs?" | Airflow (DAGs, retries, backfill) |
-| Lake e migração | 08–09 | "E o histórico bruto e semi-estruturado que não cabe no warehouse?" | HDFS + Spark, migração para S3/MinIO com Trino federado |
-| Lakehouse | 10 | "Como ter transação e time-travel sobre o lake?" | Delta Lake, Medallion (bronze/silver/gold) |
-| Baixa latência | 11–12 | "Como refletir mudanças e métricas em tempo (quase) real?" | CDC com Debezium, streaming Kappa |
-| Dados para ML | 13 | "Como servir um produto de ML com dados corretos?" | Feature table com point-in-time correctness |
-| Produção | 14–16 | "Como isso vira produção: reproduzível, confiável e observável?" | IaC (Terraform/LocalStack), qualidade/contratos, observabilidade |
-| Consolidação | 17 | "Como ver e provar a plataforma inteira?" | Este capstone |
+| Do checkout à receita diária | 00–04 | Quanto vendemos sem concentrar as consultas no banco da loja? | [Receita e contagens conciliadas](../docs/diario/etapa-1.md#provas) |
+| Entregas com múltiplas fontes | 05–07 | Quais entregas terceirizadas estão atrasadas? | Indicador de SLA em uma carga reexecutável, planejado |
+| Histórico de navegação | 08–10 | Onde os clientes abandonam a compra? | Funil consultável no lakehouse, planejado |
+| Decisões durante o dia | 11–13 | O que mudou na frota e nos pagamentos? | Evento GPS e atualização de pagamento rastreados até o destino, planejados |
+| Operação confiável | 14–17 | Como recuperar uma carga e identificar dados incorretos ou atrasados? | Recuperação, rejeição por contrato e alerta, planejados |
+
+O [índice técnico](../docs/indice-tecnico.md) aponta para os guias de cada fase.
 
 ## Arquitetura consolidada
 

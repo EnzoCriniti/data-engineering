@@ -1,6 +1,6 @@
 # Capítulo 04 — ELT batch com Python
 
-> **De onde viemos:** no capítulo 03 separamos OLTP e warehouse e migramos os dados com um script. Funciona, mas é monolítico. Aqui formalizamos o movimento como um **ELT batch** explícito: extrair, carregar a área raw e transformar em marts.
+> **De onde viemos:** o capítulo 03 separou o OLTP do warehouse Postgres. Aqui preservamos essa separação e usamos o DuckDB como ambiente leve para testar um fluxo batch com duas saídas distintas, uma cópia bruta e marts com as regras de vendas.
 
 ## Cenário de negócio
 
@@ -38,7 +38,7 @@ O fluxo é `OLTP (Postgres) → extração Python → raw (DuckDB) → marts (SQ
 
 ## Camada de BI
 
-O Metabase sobe separado do fluxo principal, para não esconder as etapas do pipeline. Neste capítulo o warehouse é DuckDB; a conexão ao BI usa o driver community de DuckDB. A partir do cap. 05 a saída analítica passa a ser materializada em Postgres, facilitando a conexão nativa do Metabase. Detalhes no [RUNBOOK](./RUNBOOK.md).
+Nesta demonstração, o time consulta os marts diretamente no DuckDB. O [capítulo 05](../05-transformacao-com-dbt) planeja materializar as mesmas métricas no warehouse Postgres do capítulo 03 para consumo no Metabase.
 
 ## Como executar
 

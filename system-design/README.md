@@ -2,7 +2,7 @@
 
 Esta pasta descreve a arquitetura macro da NuvemStore, a empresa ficticia usada em todos os capítulos do repositorio.
 
-Os capítulos `00` a `13` mostram a evolucao pratica da plataforma de dados. O `system-design` mostra a visao consolidada da empresa: aplicação, domínios de negócio, plataforma de dados, seguranca, redes, observabilidade e evolucao temporal.
+Os capítulos 00 a 17 acompanham a evolução da plataforma de dados. Esta pasta apresenta o desenho da empresa, incluindo aplicação, domínios de negócio, redes, segurança e observabilidade.
 
 ## Como ler
 
@@ -26,6 +26,8 @@ A arquitetura não nasce pronta. Ela evolui:
 8. migracao para object storage;
 9. lakehouse;
 10. CDC e streaming;
-11. dados para ML.
+11. dados para ML;
+12. infraestrutura como código, qualidade e observabilidade;
+13. consolidação da arquitetura e das evidências.
 
 Alguns componentes deixam de ser o centro da arquitetura e viram legado controlado. O warehouse relacional, por exemplo, e essencial no inicio, mas perde protagonismo quando o lakehouse amadurece.
