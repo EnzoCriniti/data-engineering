@@ -114,6 +114,15 @@ jobs:
           test "$receita" = "$("${compose[@]}" exec -T warehouse psql -U warehouse -Atc \
             'SELECT COUNT(*), SUM(valor_total) FROM analytics.fct_vendas')"
           "${compose[@]}" run --rm -T pipeline verify
+      - name: Conferir a parada do agendador
+        run: |
+          compose=(docker compose -f docker-compose.yml -f docker-compose.staging.yml)
+          "${compose[@]}" up --build -d --wait agendador
+          scheduler=$("${compose[@]}" ps -q agendador)
+          test -n "$scheduler"
+          "${compose[@]}" stop agendador
+          code=$(docker inspect --format '{{.State.ExitCode}}' "$scheduler")
+          test "$code" -eq 0 || test "$code" -eq 143
       - name: Encerrar o ambiente de teste
         if: always()
         run: docker compose -f docker-compose.yml -f docker-compose.staging.yml down

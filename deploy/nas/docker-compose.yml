@@ -86,6 +86,7 @@ services:
 
   agendador:
     <<: *job
+    init: true
     command: [schedule]
     environment:
       <<: *pipeline-env
