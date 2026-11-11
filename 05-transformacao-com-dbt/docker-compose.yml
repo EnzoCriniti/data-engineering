@@ -1,0 +1,13 @@
+include:
+  - ../04-elt-batch-com-python/docker-compose.yml
+services:
+  dbt:
+    build:
+      context: ..
+      dockerfile: shared/entregas/Dockerfile
+    environment:
+      DUCKDB_PATH: /data/warehouse/nuvemstore.duckdb
+    volumes:
+      - ../04-elt-batch-com-python/data/warehouse:/data/warehouse
+    command: [sales]
+    profiles: [jobs]

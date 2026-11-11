@@ -11,18 +11,18 @@ A NuvemStore terceiriza parte das entregas para a Transportadora X, que expõe u
 | Tecnologia | Por que entra | O que fica de fora |
 | --- | --- | --- |
 | API HTTP (fake) | Simula a fonte externa da transportadora. | — |
-| Postgres (staging) | Aterrissa o dado externo antes de transformar. | — |
+| DuckDB (staging) | Aterrissa o dado externo antes de transformar. | — |
 | Extractor Python | Extração incremental por janela de tempo. | Airflow — orquestração só no cap. 07. |
 
 ## Status desta etapa
 
-**Ambiente base.** O compose sobe uma API fake da transportadora e um Postgres de warehouse com schema `staging`. O extractor batch (paginação, controle incremental, idempotência) é o próximo passo de implementação.
+**Em validação.** A API e o extractor carregam páginas incrementais no DuckDB. O mart de SLA cruza as entregas com os pedidos internos.
 
 ## Conceitos
 
 **Fonte externa vs interna.** Diferente do OLTP, uma API externa não é controlada por você: pode mudar contrato, paginar, ter rate limit, cair, devolver duplicatas. Tratar isso é parte do trabalho.
 
-**Janela incremental por `updated_at`.** Em vez de baixar tudo a cada execução, extrai-se apenas o que mudou desde o último checkpoint (`atualizado_em`). Reduz custo e tempo, mas exige guardar o checkpoint.
+**Janela incremental por `updated_at`.** Em vez de baixar tudo a cada execução, extrai-se apenas o que mudou desde o último checkpoint (`updated_at`). Reduz custo e tempo, mas exige guardar o checkpoint.
 
 **Idempotência por chave natural.** Como a API pode reentregar registros, a carga deduplica por `entrega_id` (upsert). Reexecutar a mesma janela não duplica.
 

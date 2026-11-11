@@ -50,6 +50,7 @@ def refresh():
 
 
 def main():
+    os.umask(0o002)
     parser = argparse.ArgumentParser()
     parser.add_argument("job", choices=["seed", "simulate", "pipeline", "verify", "daily", "schedule"])
     job = parser.parse_args().job

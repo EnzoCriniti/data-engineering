@@ -23,8 +23,8 @@ Cada propriedade abaixo existe para forçar uma boa prática no extractor:
 | **Paginação** | Resposta em páginas via cursor (`next_cursor`). | Iterar até `next_cursor` ser nulo, em vez de baixar tudo de uma vez. |
 | **Rate limiting** | HTTP `429` ao exceder ~10 req/s, com header `Retry-After`. | Backoff exponencial respeitando `Retry-After`. |
 | **Incremental** | Filtro `updated_since` (ISO 8601). | Puxar só o que mudou desde o último checkpoint, não full-load. |
-| **Schema instável** | Em modo `SCHEMA_DRIFT=true`, muda a unidade de `valor_frete` (reais → centavos) ou renomeia um campo. | Gravar payload cru; validar contrato na camada seguinte (cap 15 pega o "frete em centavos"). |
-| **Latência/falha** | Latência aleatória; `5xx` esporádico. | Retry idempotente + timeout. |
+| **Schema instável** | Fixtures de teste podem alterar o payload. | Preservar o JSON cru e classificar campos essenciais inválidos no SLA. |
+| **Falhas transitórias** | O teste injeta `5xx` na página selecionada. | Retry idempotente e timeout. |
 | **Autenticação** | Header `X-API-Key`. Chave inválida → `401`. | Segredo via env/IaC, nunca hardcoded. |
 | **Event vs ingestion time** | Cada registro traz `event_ts` (quando ocorreu) distinto de quando foi lido. | Distinguir `event_ts` de `ingestion_ts` — base para PIT correctness (cap 13) e freshness (cap 16). |
 
@@ -39,6 +39,7 @@ Lista ocorrências de entrega, paginadas e incrementais.
 | Param | Obrig. | Descrição |
 | --- | --- | --- |
 | `updated_since` | não | ISO 8601. Só registros com `updated_at >= updated_since`. Omitido = desde o início. |
+| `updated_before` | não | ISO 8601. Limite exclusivo para reprocessar `[updated_since, updated_before)`. |
 | `cursor` | não | Cursor da página seguinte (devolvido em `next_cursor`). |
 | `limit` | não | Tamanho da página (default 100, máx 500). |
 
@@ -78,7 +79,7 @@ Lista ocorrências de entrega, paginadas e incrementais.
 | `status` | enum | `em_transito` \| `entregue` \| `devolvido` \| `extraviado`. |
 | `previsao_entrega` | datetime | ISO 8601. |
 | `ocorrencia` | string | Texto livre da ocorrência. |
-| `valor_frete` | number | **Em reais.** Sob `SCHEMA_DRIFT` pode vir em centavos — o cap 15 detecta. |
+| `valor_frete` | number | **Em reais.** O mart de SLA não usa o frete. |
 | `event_ts` | datetime | Quando o evento ocorreu na transportadora. |
 | `updated_at` | datetime | Quando o registro foi atualizado. Âncora do incremental. |
 
@@ -101,7 +102,7 @@ Liveness simples. `200 {"status":"ok"}`. Usado pelo healthcheck do compose.
 2. `GET /entregas?updated_since=<checkpoint>` e paginar via `cursor` até `has_more=false`.
 3. Em `429`, respeitar `Retry-After`; em `5xx`, backoff exponencial.
 4. **UPSERT por `entrega_id`** em `staging.transportadora_entregas` (idempotente — reprocessar a mesma janela não duplica).
-5. Gravar o payload **cru** (validação de contrato fica para o cap 15).
-6. Persistir o novo checkpoint só após sucesso da janela inteira.
+5. Gravar o payload **cru** e validar as chaves e o timestamp de atualização antes de confirmar a carga.
+6. Persistir o novo checkpoint na mesma transação dos dados após o sucesso da janela inteira. O backfill usa um intervalo explícito e mantém o checkpoint incremental.
 
-> Implementação (extractor, retry/backoff, paginação) no [SOLUTION.md](./SOLUTION.md); internals em [TECHNICAL.md](./TECHNICAL.md).
+> Implementação (extractor, retry/backoff, paginação) em [extract.py](./extractor/extract.py); internals em [TECHNICAL.md](./TECHNICAL.md).

@@ -31,6 +31,46 @@ x-pipeline-deps: &pipeline-deps
   oltp: { condition: service_healthy }
   warehouse: { condition: service_healthy }
 
+x-carrier-env: &carrier-env
+  TRANSPORTADORA_API_KEY: ${TRANSPORTADORA_API_KEY:?defina TRANSPORTADORA_API_KEY}
+  TRANSPORTADORA_URL: http://transportadora:8000
+  API_PAGE_SIZE: "100"
+
+x-deliveries: &deliveries
+  build:
+    context: ../..
+    dockerfile: shared/entregas/Dockerfile
+  mem_limit: 512m
+  cpus: "0.75"
+  volumes:
+    - duckdb-data:/data/warehouse
+  profiles: [jobs]
+
+x-airflow: &airflow
+  build:
+    context: ../..
+    dockerfile: 07-orquestracao-com-airflow/airflow/Dockerfile
+  init: true
+  mem_limit: 1536m
+  cpus: "1.25"
+  volumes:
+    - duckdb-data:/data/warehouse
+    - airflow-logs:/opt/airflow/logs
+
+x-airflow-env: &airflow-env
+  <<: [*pipeline-env, *carrier-env]
+  AIRFLOW_DB_PASSWORD: ${AIRFLOW_DB_PASSWORD:?defina AIRFLOW_DB_PASSWORD}
+  AIRFLOW__DATABASE__SQL_ALCHEMY_CONN_CMD: python /opt/nuvemstore/metadata_url.py
+  AIRFLOW__CORE__EXECUTOR: LocalExecutor
+  AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+  AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "true"
+  AIRFLOW__CORE__PARALLELISM: "2"
+  AIRFLOW__CORE__MAX_ACTIVE_TASKS_PER_DAG: "1"
+  AIRFLOW__SCHEDULER__PARSING_PROCESSES: "1"
+  AIRFLOW__WEBSERVER__SECRET_KEY: ${AIRFLOW_SECRET_KEY:?defina AIRFLOW_SECRET_KEY}
+  SIM_PEDIDOS: "30"
+  SIM_TERCEIRIZAR: "true"
+
 services:
   oltp:
     <<: *postgres
@@ -75,6 +115,7 @@ services:
     environment:
       <<: *job-env
       SIM_PEDIDOS: "30"
+      SIM_TERCEIRIZAR: "true"
     profiles: [jobs]
 
   pipeline:
@@ -84,20 +125,105 @@ services:
     depends_on: *pipeline-deps
     profiles: [jobs]
 
-  agendador:
-    <<: *job
-    init: true
-    command: [schedule]
-    environment:
-      <<: *pipeline-env
-      SIM_PEDIDOS: "30"
-    depends_on: *pipeline-deps
+  transportadora:
+    build:
+      context: ../..
+      dockerfile: 06-ingestao-api-externa/api/Dockerfile
+    mem_limit: 128m
+    cpus: "0.25"
     restart: unless-stopped
+    depends_on:
+      oltp: { condition: service_healthy }
+    environment:
+      TRANSPORTADORA_API_KEY: ${TRANSPORTADORA_API_KEY:?defina TRANSPORTADORA_API_KEY}
+      MOCK_OLTP_HOST: oltp
+      OLTP_PASSWORD: ${OLTP_PASSWORD:?defina OLTP_PASSWORD}
+    healthcheck:
+      test: [CMD, python, -c, "from urllib.request import urlopen; urlopen('http://127.0.0.1:8000/health')"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
+  dbt:
+    <<: *deliveries
+    environment:
+      DUCKDB_PATH: /data/warehouse/nuvemstore.duckdb
+    command: [sales]
+
+  extractor:
+    <<: *deliveries
+    environment:
+      <<: *carrier-env
+      DUCKDB_PATH: /data/warehouse/nuvemstore.duckdb
+    depends_on:
+      transportadora: { condition: service_healthy }
+    command: [extract]
+
+  sla:
+    <<: *deliveries
+    environment:
+      DUCKDB_PATH: /data/warehouse/nuvemstore.duckdb
+    command: [report]
+
+  airflow-ativar:
+    <<: *airflow
+    mem_limit: 512m
+    cpus: "0.5"
+    command: [dags, unpause, nuvemstore_daily]
+    environment: *airflow-env
+    depends_on:
+      airflow-scheduler: { condition: service_healthy }
+    profiles: [jobs]
+
+  airflow-db:
+    <<: *postgres
+    image: postgres:16
+    environment:
+      POSTGRES_DB: airflow
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD: ${AIRFLOW_DB_PASSWORD:?defina AIRFLOW_DB_PASSWORD}
+    volumes:
+      - airflow-db-data:/var/lib/postgresql/data
+
+  airflow-init:
+    <<: *airflow
+    user: "0:0"
+    mem_limit: 512m
+    cpus: "0.5"
+    entrypoint: ["/bin/bash", "-ec"]
+    command:
+      - |
+        chgrp -R 0 /data/warehouse /opt/airflow/logs
+        chmod -R g+rwX /data/warehouse /opt/airflow/logs
+        chmod g+s /data/warehouse /opt/airflow/logs
+        exec su -s /bin/bash airflow -c 'exec /entrypoint airflow db migrate'
+    environment: *airflow-env
+    depends_on:
+      airflow-db: { condition: service_healthy }
+
+  airflow-scheduler:
+    <<: *airflow
+    command: [scheduler]
+    environment: *airflow-env
+    depends_on:
+      <<: *pipeline-deps
+      transportadora: { condition: service_healthy }
+      airflow-db: { condition: service_healthy }
+      airflow-init: { condition: service_completed_successfully }
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "airflow jobs check --job-type SchedulerJob --local"]
+      interval: 30s
+      timeout: 20s
+      retries: 5
+      start_period: 30s
 
 volumes:
   oltp-data: {}
   warehouse-data: {}
   duckdb-data: {}
+  airflow-db-data: {}
+  airflow-logs: {}
 
 networks:
   default:

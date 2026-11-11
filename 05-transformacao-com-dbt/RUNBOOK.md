@@ -1,45 +1,32 @@
-# Runbook — Capítulo 05: transformação com dbt
+# Runbook — Capítulo 05
 
-> Guia rápido para **subir e usar** o ambiente. Status atual: **ambiente base** — o projeto dbt ainda será implementado (ver [GUIDE.md](./GUIDE.md) para o passo-a-passo e [SOLUTION.md](./SOLUTION.md) para o código). Os comandos de `dbt` abaixo ficam prontos para quando os modelos existirem.
+## O que este capítulo entrega
 
-## O que este capítulo entrega hoje
-
-O ambiente base com a camada de BI (Metabase) pronta para consumir os marts quando o projeto dbt for materializado.
+Marts dbt de receita diária e top produtos sobre as tabelas `raw_*` do capítulo 04. O perfil grava em `analytics_dbt` e permite comparar as duas implementações no mesmo DuckDB.
 
 ## Pré-requisitos
 
-- Docker e Docker Compose.
-- Porta `3002` livre para o Metabase.
+Docker com Compose v2.20 ou posterior. Execute os comandos a partir deste capítulo, em um projeto de estudo.
 
-## Subir o ambiente base
+## Subir e usar
 
-```bash
-cp .env.example .env
-docker compose up -d
+```sh
+docker compose --env-file .env.example up -d --wait oltp
+docker compose --env-file .env.example run --rm --build seeder
+docker compose --env-file .env.example run --rm --build pipeline
+docker compose --env-file .env.example run --rm --build dbt
 ```
 
-UI do Metabase: `http://localhost:3002`.
+## Validar
 
-## Quando o projeto dbt estiver implementado
+O job `dbt` seleciona os dois marts de vendas e seus modelos e testes upstream. Consulte `main.mart_receita_diaria` e `analytics_dbt.mart_receita_diaria` no arquivo `../04-elt-batch-com-python/data/warehouse/nuvemstore.duckdb`. Confira contagem e receita por dia com duas casas decimais. O ranking dbt desempata por produto e categoria.
 
-Os comandos padrão de operação serão:
-
-```bash
-dbt deps          # instala pacotes
-dbt build         # roda modelos + testes (staging -> marts)
-dbt docs generate # gera documentação e lineage
-dbt docs serve    # navega o grafo de dependências
-```
-
-**Validação esperada:** as contagens e métricas dos marts dbt devem bater com os marts manuais do capítulo 04 (`mart_receita_diaria`, `mart_top_produtos`).
+Para executar sem Docker, instale `requirements.txt`, aponte `DUCKDB_PATH` ao arquivo existente e rode `dbt build --profiles-dir . --select +mart_receita_diaria +mart_top_produtos`.
 
 ## Recomeçar do zero
 
-```bash
-docker compose down -v
-docker compose up -d
-```
+Em um ambiente descartável, `docker compose --env-file .env.example down --volumes` remove o OLTP de estudo. O arquivo DuckDB fica no diretório do capítulo 04. Para repetir com estado limpo, guarde esse arquivo e use um caminho novo.
 
 ## Próximo passo
 
-[Capítulo 06](../06-ingestao-api-externa): adicionar uma fonte externa batch (transportadora).
+O [capítulo 06](../06-ingestao-api-externa/RUNBOOK.md) acrescenta o SLA sobre a API de exemplo.

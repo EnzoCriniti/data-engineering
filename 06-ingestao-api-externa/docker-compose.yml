@@ -1,0 +1,31 @@
+include:
+  - ../05-transformacao-com-dbt/docker-compose.yml
+services:
+  transportadora:
+    build:
+      context: ..
+      dockerfile: 06-ingestao-api-externa/api/Dockerfile
+    environment:
+      TRANSPORTADORA_API_KEY: ${TRANSPORTADORA_API_KEY:?defina TRANSPORTADORA_API_KEY}
+    ports:
+      - "127.0.0.1:${API_PORT:-8088}:8000"
+    healthcheck:
+      test: [CMD, python, -c, "from urllib.request import urlopen; urlopen('http://127.0.0.1:8000/health')"]
+      interval: 3s
+      timeout: 3s
+      retries: 12
+  extractor:
+    build:
+      context: ..
+      dockerfile: shared/entregas/Dockerfile
+    environment:
+      DUCKDB_PATH: /data/warehouse/nuvemstore.duckdb
+      TRANSPORTADORA_URL: http://transportadora:8000
+      TRANSPORTADORA_API_KEY: ${TRANSPORTADORA_API_KEY:?defina TRANSPORTADORA_API_KEY}
+      API_PAGE_SIZE: ${API_PAGE_SIZE:-1}
+    volumes:
+      - ../04-elt-batch-com-python/data/warehouse:/data/warehouse
+    depends_on:
+      transportadora: { condition: service_healthy }
+    command: [extract]
+    profiles: [jobs]

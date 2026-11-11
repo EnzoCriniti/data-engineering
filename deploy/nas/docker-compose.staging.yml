@@ -19,8 +19,14 @@ services:
   pipeline:
     mem_limit: 320m
     cpus: "0.5"
-  agendador:
-    mem_limit: 320m
-    cpus: "0.5"
+  transportadora:
+    mem_limit: 96m
+  airflow-db:
+    mem_limit: 256m
+    cpus: "0.25"
+  airflow-scheduler:
+    mem_limit: 1280m
+    cpus: "1.0"
     environment:
       SIM_PEDIDOS: "5"
+      API_PAGE_SIZE: "2"

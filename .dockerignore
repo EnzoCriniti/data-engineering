@@ -7,4 +7,16 @@
 !04-elt-batch-com-python/pipeline/requirements.txt
 !04-elt-batch-com-python/pipeline/pipeline.py
 !04-elt-batch-com-python/pipeline/verify.py
+!05-transformacao-com-dbt/dbt_project.yml
+!05-transformacao-com-dbt/profiles.yml
+!05-transformacao-com-dbt/requirements.txt
+!05-transformacao-com-dbt/models/**
+!05-transformacao-com-dbt/tests/**
+!06-ingestao-api-externa/api/app.py
+!06-ingestao-api-externa/api/entregas.json
+!06-ingestao-api-externa/extractor/extract.py
+!06-ingestao-api-externa/extractor/staging.sql
+!07-orquestracao-com-airflow/airflow/dags/*.py
+!07-orquestracao-com-airflow/airflow/metadata_url.py
 !deploy/nas/jobs/*.py
+!shared/entregas/jobs.py
