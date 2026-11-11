@@ -6,7 +6,16 @@ A fase 3 da história da NuvemStore reúne os capítulos 08–10. A entrega usa 
 
 A fixture do dia 10/11/2026 usa quatro sessões. O teste rápido em SQLite confirmou `4 → 3 → 2 → 1` e `4 → 3 → 2 → 2` com chegada tardia. O job de integração usa dois pedidos pagos do PostgreSQL populado com o seeder reaproveitado na fase 2. Os horários de navegação pertencem à fixture. Os IDs e o status vêm do snapshot do OLTP.
 
-A saída base esperada tem 16 linhas de bronze, um inválido, um retry e perda de 50% na passagem de checkout a compra. A gold guarda os IDs convertidos e a versão silver usada. [Reproduzir o teste integrado](../../10-lakehouse-medallion/RUNBOOK.md#validar) · [PR de revisão](https://github.com/EnzoCriniti/data-engineering/pull/4)
+| Prova no runner Linux | Resultado |
+| --- | --- |
+| Migração HDFS → MinIO | 16 linhas de eventos nas mesmas partições e dois pedidos. Zero diferenças em ambos os `EXCEPT ALL`. A alteração de um payload com a mesma contagem foi rejeitada. |
+| Gold Delta v0 | `4 → 3 → 2 → 1`, pedido pago 2, perda de 50% entre checkout e compra. Um inválido e um retry ficaram fora da contagem silver. |
+| Replay e persistência | A versão 0 e o resultado foram preservados após replay e recriação do container MinIO com o mesmo volume. |
+| Gold Delta v1 | `4 → 3 → 2 → 2`, pedidos pagos 2 e 4. A leitura da versão 0 recuperou o resultado base. |
+
+[Execução validada de `dc8d76c`](https://github.com/EnzoCriniti/data-engineering/actions/runs/43020409931/job/130521903454) · [Artefato com reconciliação, gold e histórico](https://github.com/EnzoCriniti/data-engineering/actions/runs/43020409931/artifacts/13855416045) · [PR de revisão](https://github.com/EnzoCriniti/data-engineering/pull/4)
+
+Para repetir, siga o [runbook](../../10-lakehouse-medallion/RUNBOOK.md#validar). O caso adicional `gold-sem-hdfs.json` exercita o comando do NAS com um bucket vazio e os mesmos pedidos do PostgreSQL. A fixture controla a chegada tardia em dois lotes explícitos.
 
 ## Aceite no Agent Platform
 

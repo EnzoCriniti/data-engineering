@@ -42,6 +42,12 @@ cmp "$artifact_dir/gold-base.json" "$artifact_dir/gold.json"
 "${lake[@]}" run --rm -T lakehouse demo --lote tardio
 "${lake[@]}" run --rm -T lakehouse history
 
+# O Agent Platform começa com bucket vazio e consulta o OLTP sem HDFS.
+mv "$artifact_dir/gold.json" "$artifact_dir/gold-tardio.json"
+"${lake[@]}" run --rm -T -e LAKE_BUCKET=nuvemstore-staging-smoke \
+  -e OLTP_HOST=oltp-fase2 -e OLTP_PASSWORD=nuvemstore lakehouse demo
+mv "$artifact_dir/gold.json" "$artifact_dir/gold-sem-hdfs.json"
+
 python3 - "$artifact_dir" <<'PY'
 import json
 from pathlib import Path
@@ -49,13 +55,16 @@ import sys
 
 root = Path(sys.argv[1])
 base = json.loads((root / "gold-base.json").read_text(encoding="utf-8"))
-current = json.loads((root / "gold.json").read_text(encoding="utf-8"))
+current = json.loads((root / "gold-tardio.json").read_text(encoding="utf-8"))
+direct = json.loads((root / "gold-sem-hdfs.json").read_text(encoding="utf-8"))
 history = json.loads((root / "historico.json").read_text(encoding="utf-8"))
 ids = [int(i) for i in (root / "pedidos-fase2.txt").read_text().splitlines()]
 assert base["resultado"]["pedidos_convertidos"] == ids[:1], base
 assert current["resultado"]["pedidos_convertidos"] == ids, current
 assert [current["resultado"][step] for step in ("visualizaram", "adicionaram", "iniciaram", "compraram")] == [4, 3, 2, 2]
 assert current["versao_gold"] == base["versao_gold"] + 1
+assert direct["resultado"] == base["resultado"]
+assert direct["versao_gold"] == 0
 assert history["versao_anterior"] == base["versao_gold"]
 assert history["resultado_anterior"] == base["resultado"]
 print(f"HDFS → MinIO → Delta: 4 → 3 → 2 → 1, depois 4 → 3 → 2 → 2. Pedidos OLTP: {ids}")
