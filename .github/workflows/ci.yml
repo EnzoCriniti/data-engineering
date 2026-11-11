@@ -10,6 +10,8 @@ env:
   TRANSPORTADORA_API_KEY: ci-sintetico-transportadora
   AIRFLOW_DB_PASSWORD: ci-sintetico-airflow
   AIRFLOW_SECRET_KEY: ci-sintetico-sessao
+  NAVEGACAO_MINIO_USER: ci-navegacao
+  NAVEGACAO_MINIO_PASSWORD: ci-sintetico-navegacao
 
 jobs:
   lint-yaml:

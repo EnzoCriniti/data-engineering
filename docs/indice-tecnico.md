@@ -24,9 +24,9 @@ Os capítulos detalham as cinco fases da [história da NuvemStore](../README.md#
 
 | Capítulo | Tema | Status | Papel na história |
 | --- | --- | --- | --- |
-| [08](../08-data-lake-com-spark) | Data Lake on-prem com HDFS | Documentado | Sobe HDFS, Spark e metastore/catálogo para histórico, JSON e dados semi-estruturados. |
-| [09](../09-migracao-hdfs-para-s3) | Migração HDFS para S3 | Documentado | Simula legado HDFS e migração gradual para MinIO/S3. |
-| [10](../10-lakehouse-medallion) | Lakehouse + Medallion | Documentado | Evolui object storage para Delta/Medallion com gold consultável e tabelas catalogadas. |
+| [08](../08-data-lake-com-spark) | Data Lake on-prem com HDFS | Em validação | Ingestão de NDJSON de navegação para Parquet particionado em HDFS. |
+| [09](../09-migracao-hdfs-para-s3) | Migração HDFS para S3 | Em validação | Migra o snapshot para MinIO e concilia eventos, pedidos e funil. |
+| [10](../10-lakehouse-medallion) | Lakehouse + Medallion | Em validação | Publica em Delta o funil por sessão e compara versões após um lote tardio. |
 
 ## 4. Decisões durante o dia
 

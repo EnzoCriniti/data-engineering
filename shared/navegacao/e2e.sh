@@ -27,7 +27,7 @@ python3 shared/navegacao/test_fixture.py
 "${orders[@]}" exec -T oltp psql -U nuvemstore -Atc \
   "SELECT pedido_id FROM pedido WHERE status = 'pago' ORDER BY pedido_id LIMIT 2" > "$artifact_dir/pedidos-fase2.txt"
 
-"${lake[@]}" up -d --wait namenode datanode minio
+"${lake[@]}" up --build -d --wait namenode datanode minio
 docker network connect --alias oltp-fase2 "${project}_default" p04-oltp
 "${lake[@]}" build lakehouse
 "${lake[@]}" run --rm -T -e OLTP_HOST=oltp-fase2 -e OLTP_PASSWORD=nuvemstore lakehouse ingest

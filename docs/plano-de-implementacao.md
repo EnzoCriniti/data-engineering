@@ -32,7 +32,7 @@ O [README](../README.md#como-a-nuvemstore-evolui) conta a história da empresa e
 | **1. Fundação batch** | 00, 02, 03, 04 | Postgres OLTP, warehouse Postgres, seeder, simulador diário de pedidos, ELT agendado para DuckDB | ~1,5 GB | Teste de ponta a ponta no CI e contagens origem = destino | Em andamento |
 | 2. Transformação e BI | 01, 05 | dbt (job), Metabase com rota pública | ~3,5 GB | Dashboard de receita no ar | Planejada |
 | 3. Fontes e orquestração | 06, 07 | API mock da transportadora, Airflow (LocalExecutor) no lugar do cron | ~6 GB | DAG com retry e backfill | Planejada |
-| 4. Lake e lakehouse | 08, 09, 10 | MinIO, metastore, Trino; Spark sob demanda. HDFS fica só no modo local | ~8 GB (+ Spark sob demanda) | Camada gold consultável no Trino | Planejada |
+| 4. Lake e lakehouse | 08, 09, 10 | MinIO interno e Spark sob demanda. HDFS no laboratório de migração | a medir em staging | Equivalência HDFS/MinIO e funil gold em Delta | [Em validação](./diario/etapa-4.md) |
 | 5. Baixa latência e ML | 11, 12, 13 | Redpanda, Kafka Connect/Debezium, tabela de features | a medir; pode exigir desligar partes da etapa 4 | Lag do CDC e métricas ao vivo | Planejada |
 | 6. Produção e capstone | 14, 15, 16, 17 | Portão de qualidade, SLOs e alertas. Capítulo 14 (LocalStack) fica só no modo local | a medir | Galeria de provas e diagrama consolidado | Planejada |
 

@@ -1,55 +1,48 @@
-# Runbook — Capítulo 10: Lakehouse + Medallion
+# Runbook — Funil Delta no MinIO
 
-> Guia rápido para **subir e usar**. Status atual: **ambiente base** — MinIO, Spark, Trino, Airflow, metastore e Metabase sobem prontos; os jobs Delta (bronze/silver/gold) ainda serão implementados (ver [GUIDE.md](./GUIDE.md) para o passo-a-passo e [SOLUTION.md](./SOLUTION.md) para o código).
+## O que este capítulo entrega
 
-## O que este capítulo entrega hoje
-
-O ambiente lakehouse: object storage (MinIO), Spark com Delta Lake, Trino para consulta, metastore para catálogo, Airflow para orquestração e Metabase para BI.
+Funil diário por sessão em `s3a://nuvemstore-lake/navegacao/gold/funil_diario`. A silver contém o vínculo com o pedido pago. O relatório inclui contagens, perdas absolutas, taxas e IDs dos pedidos convertidos.
 
 ## Pré-requisitos
 
-- Docker e Docker Compose, com memória generosa.
-- Portas livres: `9000`/`9001` (MinIO), `8090` (Spark), `8085` (Trino), `8080` (Airflow), mais a do Metabase — confira no `.env.example`.
+Docker Compose v2 em Linux para a integração. Python 3.11 ou superior para o teste rápido em SQLite. Rode da raiz.
 
-## Subir o ambiente
-
-```bash
-cp .env.example .env
-docker compose up -d
-```
-
-UIs típicas:
-
-```text
-MinIO console:  http://localhost:9001
-Spark master:   http://localhost:8090
-Airflow:        http://localhost:8080
-```
-
-## Quando os jobs estiverem implementados
+## Subir
 
 ```bash
-docker compose run spark-submit spark-submit /app/jobs/bronze_ingest.py
-docker compose run spark-submit spark-submit /app/jobs/silver_transform.py
-docker compose run spark-submit spark-submit /app/jobs/gold_marts.py
+compose=(docker compose -p nuvemstore-navegacao -f 10-lakehouse-medallion/docker-compose.yml)
+mkdir -p 10-lakehouse-medallion/data/evidencias
+chmod a+w 10-lakehouse-medallion/data/evidencias
+"${compose[@]}" up --build -d --wait minio
+"${compose[@]}" build lakehouse
 ```
 
-Consultar as camadas via Trino (ou `spark-sql`):
+## Usar
 
-```sql
-SELECT count(*) FROM delta.`s3a://datalake/bronze/entregas`;
-SELECT * FROM delta.`s3a://datalake/gold/resumo_entregas` LIMIT 10;
+```bash
+# Se o snapshot já foi migrado, rode build. Em um ambiente vazio, rode demo.
+"${compose[@]}" run --rm -T lakehouse demo
+"${compose[@]}" run --rm -T lakehouse build
+"${compose[@]}" run --rm -T lakehouse demo --lote tardio
+"${compose[@]}" run --rm -T lakehouse history
 ```
 
-**Validação:** as métricas da camada gold devem ser equivalentes aos marts do warehouse dos capítulos anteriores antes de apontar o BI para o lakehouse.
+O demo independente usa dois pedidos de referência sintéticos. O script de integração cria um PostgreSQL isolado com o seeder da fase 2 e verifica a ligação contra o banco.
+
+## Validar
+
+```bash
+python3 shared/navegacao/test_fixture.py
+bash shared/navegacao/e2e.sh
+```
+
+O fluxo completo deve reproduzir `4 → 3 → 2 → 1` e `4 → 3 → 2 → 2` após o lote tardio, rejeitar um candidato adulterado, ler a gold após recriar o MinIO e recuperar a versão anterior. O diretório `10-lakehouse-medallion/data/evidencias/` reúne os JSON e os IDs do PostgreSQL. O script usa projeto Compose descartável e remove seus volumes ao terminar.
 
 ## Recomeçar do zero
 
-```bash
-docker compose down -v
-docker compose up -d
-```
+`"${compose[@]}" down -v` apaga os volumes descartáveis do demo. Para remover também os volumes HDFS do mesmo projeto de estudo, rode com `--profile hdfs`.
 
 ## Próximo passo
 
-[Capítulo 11](../11-cdc-com-debezium): capturar mudanças do banco em tempo quase real (CDC) para alimentar o lakehouse sem recarregar tudo.
+Confira o [aceite de staging no Agent Platform](../docs/diario/etapa-4.md).

@@ -1,59 +1,43 @@
-# Runbook — Capítulo 08: Data Lake com HDFS e Spark
+# Runbook — Snapshot de navegação no HDFS
 
-> Guia rápido para **subir e usar**. Status atual: **ambiente base** — HDFS, Spark e Hive Metastore sobem prontos; os jobs Spark de ingestão/curadoria ainda serão implementados (ver [GUIDE.md](./GUIDE.md) para o passo-a-passo e [SOLUTION.md](./SOLUTION.md) para o código).
+## O que este capítulo entrega
 
-## O que este capítulo entrega hoje
-
-Um data lake distribuído em modo local: HDFS (namenode + datanode), cluster Spark (master + worker) e o Hive Metastore como catálogo, prontos para receber jobs.
+Um snapshot de 16 linhas de NDJSON preservadas em Parquet, com duas datas UTC, uma linha inválida e o snapshot de dois pedidos de referência.
 
 ## Pré-requisitos
 
-- Docker e Docker Compose.
-- Memória suficiente para o cluster (Spark + HDFS são pesados; recomenda-se 8 GB+ disponíveis ao Docker).
-- Portas `9870` (HDFS NameNode) e `8090` (Spark master) livres.
+Python 3.11 ou superior para a fixture. Docker Compose v2 em Linux e acesso aos registries e ao Maven para o laboratório. Rode da raiz do repositório.
 
-## Subir o lake
+## Subir
 
 ```bash
-cp .env.example .env
-docker compose up -d
+compose=(docker compose -p nuvemstore-navegacao -f 10-lakehouse-medallion/docker-compose.yml --profile hdfs)
+"${compose[@]}" up -d --wait namenode datanode
+"${compose[@]}" build lakehouse
 ```
 
-UIs:
-
-```text
-HDFS NameNode:  http://localhost:9870
-Spark master:   http://localhost:8090
-```
-
-Na UI do HDFS você confere os datanodes vivos e o uso de capacidade; na do Spark, os workers registrados e os jobs em execução.
-
-## Conferir o cluster
+## Usar
 
 ```bash
-# datanodes vivos e relatório do HDFS
-docker compose exec namenode hdfs dfsadmin -report
-
-# listar a raiz do HDFS
-docker compose exec namenode hdfs dfs -ls /
+python3 shared/navegacao/generate.py
+"${compose[@]}" run --rm -T lakehouse ingest
 ```
 
-## Quando os jobs estiverem implementados
+A fixture local usa dois pedidos sintéticos de referência. O teste Linux do capítulo 10 prepara o PostgreSQL com o seeder da fase anterior e usa pedidos pagos desse banco.
+
+## Validar
 
 ```bash
-# submeter o job de ingestão (JSON cru -> Parquet curado no lake)
-docker compose run spark-submit spark-submit /app/jobs/ingest_to_lake.py
+"${compose[@]}" exec -T namenode hdfs dfs -ls /navegacao/base/eventos
+"${compose[@]}" run --rm -T lakehouse ingest
 ```
 
-**Validação:** após a curadoria, os Parquet devem aparecer no HDFS (`hdfs dfs -ls /curated/...`) e os datasets registrados no metastore.
+Esperado: `dt_evento=2026-11-10`, `dt_evento=2026-11-11`, `dt_evento=invalido`, e o mesmo SHA-256 e total de 16 linhas nas duas execuções.
 
 ## Recomeçar do zero
 
-```bash
-docker compose down -v
-docker compose up -d
-```
+`"${compose[@]}" down -v` apaga os volumes descartáveis do projeto de estudo.
 
 ## Próximo passo
 
-[Capítulo 09](../09-migracao-hdfs-para-s3): migrar o storage de HDFS para S3/MinIO, desacoplando storage e compute.
+Preserve o snapshot e siga para a [reconciliação no MinIO](../09-migracao-hdfs-para-s3/RUNBOOK.md).

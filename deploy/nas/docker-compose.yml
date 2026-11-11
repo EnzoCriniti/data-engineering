@@ -218,7 +218,49 @@ services:
       retries: 5
       start_period: 30s
 
+  navegacao-minio:
+    build:
+      context: ../..
+      dockerfile: 10-lakehouse-medallion/minio.Dockerfile
+    command: [server, /data]
+    mem_limit: 768m
+    cpus: "0.5"
+    restart: unless-stopped
+    environment:
+      MINIO_ROOT_USER: ${NAVEGACAO_MINIO_USER:?defina NAVEGACAO_MINIO_USER}
+      MINIO_ROOT_PASSWORD: ${NAVEGACAO_MINIO_PASSWORD:?defina NAVEGACAO_MINIO_PASSWORD}
+    volumes:
+      - navegacao-data:/data
+    healthcheck:
+      test: [CMD, wget, -q, -O, /dev/null, http://127.0.0.1:9000/minio/health/live]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  navegacao:
+    build:
+      context: ../..
+      dockerfile: 10-lakehouse-medallion/spark/Dockerfile
+    command: [demo]
+    mem_limit: 2048m
+    cpus: "2.0"
+    profiles: [jobs]
+    depends_on:
+      oltp: {condition: service_healthy}
+      navegacao-minio: {condition: service_healthy}
+    environment:
+      S3_ENDPOINT: http://navegacao-minio:9000
+      AWS_ACCESS_KEY_ID: ${NAVEGACAO_MINIO_USER:?defina NAVEGACAO_MINIO_USER}
+      AWS_SECRET_ACCESS_KEY: ${NAVEGACAO_MINIO_PASSWORD:?defina NAVEGACAO_MINIO_PASSWORD}
+      LAKE_BUCKET: nuvemstore-lake
+      OLTP_HOST: oltp
+      OLTP_PASSWORD: ${OLTP_PASSWORD:?defina OLTP_PASSWORD}
+    volumes:
+      - navegacao-lock:/lock
+
 volumes:
+  navegacao-data: {}
+  navegacao-lock: {}
   oltp-data: {}
   warehouse-data: {}
   duckdb-data: {}

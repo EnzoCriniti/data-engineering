@@ -30,3 +30,9 @@ services:
     environment:
       SIM_PEDIDOS: "5"
       API_PAGE_SIZE: "2"
+  navegacao-minio:
+    mem_limit: 512m
+    cpus: "0.5"
+  navegacao:
+    mem_limit: 1536m
+    cpus: "1.5"
