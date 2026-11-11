@@ -37,11 +37,12 @@ def parse(raw):
         return (None,) * 8 + ("json_ou_timestamp",)
 
 
-parse_event = F.udf(
-    parse,
-    "struct<event_id:string,session_id:string,event_seq:bigint,event_type:string,"
-    "event_epoch_s:bigint,produto_id:bigint,pedido_id:bigint,cliente_id:bigint,erro:string>",
-)
+def parse_event(column):
+    return F.udf(
+        parse,
+        "struct<event_id:string,session_id:string,event_seq:bigint,event_type:string,"
+        "event_epoch_s:bigint,produto_id:bigint,pedido_id:bigint,cliente_id:bigint,erro:string>",
+    )(column)
 
 
 def raw_events(spark, lines):
