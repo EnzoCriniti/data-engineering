@@ -20,3 +20,7 @@
 !07-orquestracao-com-airflow/airflow/metadata_url.py
 !deploy/nas/jobs/*.py
 !shared/entregas/jobs.py
+!shared/navegacao/*.py
+!shared/navegacao/requirements.txt
+!shared/navegacao/evento-v1.schema.json
+!10-lakehouse-medallion/sql/funil.sql
