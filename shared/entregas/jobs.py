@@ -25,7 +25,10 @@ def writer_lock():
 
 
 def build(as_of, sales_only=False):
-    options = ["--select", "+mart_receita_diaria", "+mart_top_produtos"] if sales_only else []
+    options = [
+        "--select", "+mart_receita_diaria", "+mart_top_produtos",
+        "--indirect-selection", "cautious",
+    ] if sales_only else []
     variables = ["--vars", json.dumps({"sla_as_of": as_of})] if as_of else []
     dbt = Path(sys.executable).with_name("dbt")
     with writer_lock():

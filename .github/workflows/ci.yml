@@ -106,6 +106,8 @@ jobs:
           "${compose[@]}" run --rm --build -T simulador
           "${compose[@]}" run --rm -T simulador
           "${compose[@]}" run --rm -T pipeline
+          # O job de vendas precisa rodar antes da primeira carga da transportadora.
+          "${compose[@]}" run --rm --build -T dbt
 
           pedidos=$("${compose[@]}" exec -T oltp psql -U nuvemstore -Atc 'SELECT COUNT(*) FROM pedido')
           test "$pedidos" = 205
