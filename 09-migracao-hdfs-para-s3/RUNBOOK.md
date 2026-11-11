@@ -1,64 +1,38 @@
-# Runbook — Capítulo 09: migração de HDFS para S3
+# Runbook — Equivalência HDFS → MinIO
 
-> Guia rápido para **subir e usar**. Status atual: **ambiente base** — HDFS, MinIO, Spark, Trino, Airflow e Metabase sobem prontos; os jobs de migração e federação ainda serão implementados (ver [GUIDE.md](./GUIDE.md) para o passo-a-passo e [SOLUTION.md](./SOLUTION.md) para o código).
+## O que este capítulo entrega
 
-## O que este capítulo entrega hoje
-
-O ambiente híbrido para simular a migração: o lake legado em HDFS, o alvo moderno em MinIO (S3-compatible), Spark para mover dados, Trino para federar consultas, Airflow para orquestrar e Metabase para o BI.
+O mesmo snapshot no HDFS e no MinIO, com `reconciliacao-base.json` e um manifesto do lote aceito em object storage.
 
 ## Pré-requisitos
 
-- Docker e Docker Compose, com memória generosa (vários serviços pesados).
-- Portas livres: `9870` (HDFS), `9000`/`9001` (MinIO API/console), `8090` (Spark), `8080` (Airflow), `8085` (Trino) — confira os valores no `.env.example`.
+Docker Compose v2 em Linux. Rode da raiz. Estes comandos recriam o snapshot do capítulo 08 quando necessário.
 
-## Subir o ambiente
-
-```bash
-cp .env.example .env
-docker compose up -d
-```
-
-UIs típicas:
-
-```text
-HDFS NameNode:  http://localhost:9870
-MinIO console:  http://localhost:9001
-Spark master:   http://localhost:8090
-Airflow:        http://localhost:8080
-```
-
-## Conferir
+## Subir
 
 ```bash
-# HDFS no ar
-docker compose exec namenode hdfs dfs -ls /
-
-# MinIO respondendo (via cliente mc dentro do container, quando configurado)
-docker compose exec minio mc ls local/
+compose=(docker compose -p nuvemstore-navegacao -f 10-lakehouse-medallion/docker-compose.yml --profile hdfs)
+mkdir -p 10-lakehouse-medallion/data/evidencias
+chmod a+w 10-lakehouse-medallion/data/evidencias
+"${compose[@]}" up --build -d --wait namenode datanode minio
+"${compose[@]}" build lakehouse
 ```
 
-## Quando os jobs estiverem implementados
+## Usar
 
 ```bash
-# migrar partições frias de HDFS para S3/MinIO (job Spark)
-docker compose run spark-submit spark-submit /app/jobs/migrate_hdfs_to_s3.py
+"${compose[@]}" run --rm -T lakehouse ingest
+"${compose[@]}" run --rm -T lakehouse migrate
 ```
 
-A **consulta federada** (HDFS + S3 ao mesmo tempo) não é um job Spark: é feita pelo Trino, usando o catálogo `trino/catalog/hive.properties`. Com a partição migrada, o mesmo `SELECT` continua respondendo esteja o dado em HDFS ou em S3:
+## Validar
 
-```sql
-SELECT count(*) FROM hive.default.entregas;   -- via Trino, transparente ao usuário
-```
-
-**Validação:** as contagens por partição devem bater antes e depois da migração (reconciliação — o próprio `migrate_hdfs_to_s3.py` imprime essa checagem), e o Trino deve retornar o mesmo resultado independentemente de onde a partição está.
+Abra `10-lakehouse-medallion/data/evidencias/reconciliacao-base.json`. Os dois `EXCEPT ALL` devem retornar zero diferenças. As partições devem somar 16 linhas de eventos e o funil deve resultar em `4 → 3 → 2 → 1` dos dois lados. O teste integrado cria um candidato adulterado e confirma a rejeição.
 
 ## Recomeçar do zero
 
-```bash
-docker compose down -v
-docker compose up -d
-```
+`"${compose[@]}" down -v` apaga os volumes descartáveis do estudo. O script de ponta a ponta gera suas próprias evidências.
 
 ## Próximo passo
 
-[Capítulo 10](../10-lakehouse-medallion): dar ao lake em object storage as garantias transacionais do warehouse, com Delta/Iceberg e a arquitetura Medallion.
+Consuma o manifesto já aprovado com o comando `build` do [capítulo 10](../10-lakehouse-medallion/RUNBOOK.md).

@@ -22,7 +22,7 @@ A primeira entrega já foi executada com **1.200 pedidos sintéticos**. O ELT co
 
 ### 3. Histórico de navegação
 
-**Planejada.** Produto quer entender onde os clientes abandonam a compra. Os eventos de navegação exigem guardar e consultar um histórico maior em JSON. A entrega prevista é um funil consultável no lakehouse. O guia de migração acompanha a passagem de HDFS para object storage e a conferência do histórico. [Guias de lake e lakehouse](./docs/indice-tecnico.md#3-histórico-de-navegação)
+**Em validação.** Produto acompanha visualização, carrinho, checkout e compra por sessão. O laboratório migra o histórico de HDFS para MinIO, confere a equivalência e publica o funil em Delta, com conversões ligadas aos pedidos pagos. [Guias de lake e lakehouse](./docs/indice-tecnico.md#3-histórico-de-navegação)
 
 ### 4. Decisões durante o dia
 

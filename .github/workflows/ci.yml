@@ -4,12 +4,14 @@ on:
   push:
     branches: [main]
   pull_request:
-    branches: [main]
+    branches: [main, codex/fase-2-entregas]
 
 env:
   TRANSPORTADORA_API_KEY: ci-sintetico-transportadora
   AIRFLOW_DB_PASSWORD: ci-sintetico-airflow
   AIRFLOW_SECRET_KEY: ci-sintetico-sessao
+  NAVEGACAO_MINIO_USER: ci-navegacao
+  NAVEGACAO_MINIO_PASSWORD: ci-sintetico-navegacao
 
 jobs:
   lint-yaml:
@@ -155,6 +157,21 @@ jobs:
       - uses: actions/checkout@v4
       - name: Exercitar recuperação e backfill
         run: bash shared/entregas/airflow-e2e.sh
+
+  navegacao-e2e:
+    name: Navegação (HDFS, MinIO e Delta)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Migrar, conciliar e publicar o funil
+        run: bash shared/navegacao/e2e.sh
+      - name: Guardar evidências da navegação
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: navegacao-evidencias
+          path: 10-lakehouse-medallion/data/evidencias/
 
   dbt-parse:
     name: Validar projetos dbt (parse)

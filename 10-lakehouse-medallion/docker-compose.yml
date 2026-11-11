@@ -1,0 +1,76 @@
+x-hdfs-env: &hdfs-env
+  CORE_CONF_fs_defaultFS: hdfs://namenode:9000
+  HDFS_CONF_dfs_replication: "1"
+  HDFS_CONF_dfs_permissions_enabled: "false"
+
+services:
+  namenode:
+    image: bde2020/hadoop-namenode:2.0.0-hadoop3.2.1-java8
+    profiles: [hdfs]
+    environment:
+      <<: *hdfs-env
+      CLUSTER_NAME: nuvemstore
+    volumes:
+      - hdfs-namenode:/hadoop/dfs/name
+    healthcheck:
+      test: [CMD-SHELL, "hdfs dfs -test -d /"]
+      interval: 5s
+      timeout: 10s
+      retries: 20
+
+  datanode:
+    image: bde2020/hadoop-datanode:2.0.0-hadoop3.2.1-java8
+    profiles: [hdfs]
+    depends_on:
+      namenode: {condition: service_healthy}
+    environment:
+      <<: *hdfs-env
+      SERVICE_PRECONDITION: "namenode:9870"
+    volumes:
+      - hdfs-datanode:/hadoop/dfs/data
+    healthcheck:
+      test: [CMD-SHELL, "hdfs dfsadmin -report -live | grep -q 'Live datanodes (1)' && hdfs dfsadmin -safemode get | grep -q OFF"]
+      interval: 5s
+      timeout: 10s
+      retries: 20
+
+  minio:
+    build:
+      context: ..
+      dockerfile: 10-lakehouse-medallion/minio.Dockerfile
+    command: [server, /data]
+    environment:
+      MINIO_ROOT_USER: ${MINIO_USER:-nuvemstore}
+      MINIO_ROOT_PASSWORD: ${MINIO_PASSWORD:-nuvemstore-local}
+    volumes:
+      - minio-data:/data
+    healthcheck:
+      test: [CMD, wget, -q, -O, /dev/null, http://127.0.0.1:9000/minio/health/live]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  lakehouse:
+    build:
+      context: ..
+      dockerfile: 10-lakehouse-medallion/spark/Dockerfile
+    profiles: [jobs]
+    command: [demo]
+    environment:
+      S3_ENDPOINT: http://minio:9000
+      AWS_ACCESS_KEY_ID: ${MINIO_USER:-nuvemstore}
+      AWS_SECRET_ACCESS_KEY: ${MINIO_PASSWORD:-nuvemstore-local}
+      LAKE_BUCKET: ${LAKE_BUCKET:-nuvemstore-lake}
+      LAKE_REVISION: ${LAKE_REVISION:-local}
+      OLTP_HOST: ${OLTP_HOST:-}
+      OLTP_PASSWORD: ${OLTP_PASSWORD:-}
+      LAKE_ARTIFACTS: /evidencias
+    volumes:
+      - spark-lock:/lock
+      - ./data/evidencias:/evidencias
+
+volumes:
+  hdfs-namenode: {}
+  hdfs-datanode: {}
+  minio-data: {}
+  spark-lock: {}
