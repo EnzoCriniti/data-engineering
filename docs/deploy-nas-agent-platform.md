@@ -14,9 +14,9 @@ Até 10/11/2026 a plataforma publicava só um container web por projeto (`static
 ## Validação em 11/11/2026
 
 - O checkout `feat/projetos-compose` já implementa manifesto, validação, variáveis por ambiente, limites, deploy por etapa, jobs e aba Etapas. Os 48 testes direcionados de Compose e interface passaram.
-- O arquivo `source/.versao-publicada` no NAS identifica o commit `47af4ba`, descendente de `0dce30f`, que introduziu o fluxo Compose. O endpoint de saúde respondeu. O aceite da NuvemStore com Dokploy depende de importar ou liberar acesso ao repositório no Forgejo e vinculá-lo à plataforma.
+- O arquivo `source/.versao-publicada` no NAS identifica o commit `47af4ba`, descendente de `0dce30f`, que introduziu o fluxo Compose. A NuvemStore foi importada no Forgejo, vinculada à plataforma e publicada em staging pelo Dokploy.
 - O [Compose do NAS](../deploy/nas/docker-compose.yml) passou no validador do checkout irmão e no `docker compose config` com e sem o overlay. As imagens incluem o DDL e cada ambiente usa volumes próprios para os dois bancos PostgreSQL e o DuckDB.
-- A aba Etapas permite desligar o ambiente inteiro de staging e voltar a ligá-lo no próximo deploy. O adapter chama `compose.stop` e envia `freshVolumes: false` no deploy. Os testes cobrem essas chamadas. A preservação de dados precisa ser conferida no NAS. Para retirar um serviço específico de produção, planejar a mudança em uma release e verificar a recuperação dos dados antes da alteração.
+- A aba Etapas permite desligar o ambiente inteiro de staging e voltar a ligá-lo no próximo deploy. O teste no NAS preservou os três volumes e os totais conciliados. Para retirar um serviço específico de produção, planeje a mudança em uma release e verifique a recuperação dos dados antes da alteração. [Evidências da etapa](./diario/etapa-1.md#aceite-no-nas)
 
 ## O que a plataforma precisa oferecer
 
@@ -104,3 +104,5 @@ Os valores estimados estão no [plano](./plano-de-implementacao.md#etapas). Depo
 |---|---|---|---|
 | 1 — staging | oltp, warehouse, agendador | 832 MiB residentes, 1.152 MiB com um job | a medir |
 | 1 — produção | oltp, warehouse, agendador | 1.152 MiB residentes, 1.536 MiB com um job | a medir |
+
+Uma amostra após a primeira carga de staging registrou 73,3 MiB residentes nos três serviços.

@@ -34,7 +34,8 @@
 - [x] Corrigir os status do README raiz.
 - [x] `deploy/nas/` com simulador diário e agendador.
 - [ ] Trilha sem soluções (script, `exercicio.yml`, workflow).
-- [ ] Publicar no NAS (depende do agent-platform).
+- [x] Publicar e validar staging no NAS pelo Agent Platform.
+- [ ] Aprovar e publicar produção.
 - [ ] Texto do portfólio.
 
 ## Provas
@@ -63,9 +64,17 @@ Primeira validação via SSH em um ambiente temporário com PostgreSQL 16.15, Py
 | [Capítulo 04](https://github.com/EnzoCriniti/data-engineering/actions/runs/42952306746/job/130299202405) | 1.200 pedidos na origem. As duas execuções conciliaram 8 tabelas raw, 1.033 pedidos não cancelados e R$ 1.668.388,10 de receita. |
 | [Compose cumulativo com overlay de staging](https://github.com/EnzoCriniti/data-engineering/actions/runs/42952306746/job/130299202474) | Bootstrap repetido, 205 pedidos após acrescentar um único lote de cinco, 541 itens e R$ 289.859,60 conciliados no warehouse. O DuckDB conciliou 8 tabelas raw e 181 pedidos não cancelados. Depois de parar e recriar os containers, os dois bancos PostgreSQL conservaram as contagens e o DuckDB passou na verificação antes de uma nova carga. |
 
+### Aceite no NAS
+
+- A [PR #1](https://github.com/EnzoCriniti/data-engineering/pull/1) foi mesclada em `aeffef7`. O repositório privado `Enzo/data-engineering` foi importado no Forgejo e vinculado ao projeto NuvemStore, com webhook ativo, duas senhas no cofre de staging e teto de 8.192 MiB. O push de `aeffef7` para `staging` publicou o Compose no Dokploy.
+- Dois jobs `seeder` executados pela plataforma registraram 50 clientes e 200 pedidos no primeiro bootstrap e preservaram os dados na repetição. O job `pipeline` terminou com código zero.
+- No container do agendador, um teste com relógio simulado às 05:59, 06:00 e 06:01 UTC disparou uma execução real do lote às 06:00 simuladas. Foram acrescentados cinco pedidos. O job manual `simulador` confirmou que a data já tinha sido processada.
+- O Agent Platform parou staging. O push de `c4ed5d5`, com a mesma árvore do commit mesclado, religou o ambiente pelo Dokploy. Antes de uma nova carga, os três volumes tinham os mesmos nomes e horários de criação. O OLTP preservou 205 pedidos e o marcador diário. O warehouse preservou 541 itens e R$ 289.859,60 de receita. O DuckDB preservou 181 pedidos não cancelados, R$ 289.859,60 e 80 dias no mart.
+- Os serviços residentes somaram 73,3 MiB em uma amostra após a primeira carga. Na primeira parada, o agendador chegou ao código 137. O Compose passou a usar `init: true` para encaminhar o sinal de parada, com verificação no CI.
+
 ## Próxima sessão
 
-Revisar a PR. Importar ou liberar acesso à NuvemStore no Forgejo, vincular o repositório ao Agent Platform e cadastrar as duas senhas de staging no cofre. Seguir o [aceite do primeiro staging](../deploy-nas-agent-platform.md#aceite-do-primeiro-staging), incluindo o teste de parada e redeploy pelo Dokploy e a medição de memória. A revisão e o aceite de staging antecedem a tag e a aprovação de produção.
+Conferir o primeiro disparo no horário real e medir o pico de memória durante o lote. O próximo passo de produção passa pela tag da etapa, pelos segredos próprios do ambiente e pela aprovação no Agent Platform.
 
 ## O que aprendi
 

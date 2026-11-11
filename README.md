@@ -14,7 +14,7 @@ A primeira entrega já foi executada com **1.200 pedidos sintéticos**. O ELT co
 
 ### 1. Do checkout à receita diária
 
-**Em validação.** A equipe desenha o modelo de vendas e cria um schema analítico no mesmo Postgres. Como checkout e relatórios ainda compartilham recursos, a análise passa para um warehouse dedicado. O lote em Python e DuckDB demonstra a carga e a reconciliação de receita. [Guias da fundação batch](./docs/indice-tecnico.md#1-do-checkout-à-receita-diária)
+**Validada em staging.** A equipe desenha o modelo de vendas e cria um schema analítico no mesmo Postgres. Como checkout e relatórios ainda compartilham recursos, a análise passa para um warehouse dedicado. O lote em Python e DuckDB demonstra a carga e a reconciliação de receita. [Guias da fundação batch](./docs/indice-tecnico.md#1-do-checkout-à-receita-diária)
 
 ### 2. Entregas com múltiplas fontes
 
