@@ -105,7 +105,7 @@ jobs:
           "${compose[@]}" run --rm --build -T pipeline
           "${compose[@]}" run --rm --build -T simulador
           "${compose[@]}" run --rm -T simulador
-          "${compose[@]}" run --rm --build -T pipeline daily
+          "${compose[@]}" run --rm -T pipeline
 
           pedidos=$("${compose[@]}" exec -T oltp psql -U nuvemstore -Atc 'SELECT COUNT(*) FROM pedido')
           test "$pedidos" = 205

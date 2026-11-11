@@ -1,6 +1,6 @@
 # Cap. 05 — Transformação com dbt: SQL como código testável
 
-> **Aula deste capítulo.** Você aprende a tratar SQL como código versionado e testável com **dbt** — `ref()`, materializações, testes declarativos e lineage. A orientação está aqui; o código dos modelos e do `schema.yml` está no **[SOLUTION.md](./SOLUTION.md)**; os internals (como o dbt compila Jinja em SQL, ordena o DAG, e materializa view vs table vs incremental) estão no **[TECHNICAL.md](./TECHNICAL.md)**.
+> **Aula deste capítulo.** Você aprende a tratar SQL como código versionado e testável com **dbt** — `ref()`, materializações, testes declarativos e lineage. A orientação está aqui; os links para os modelos e testes estão no **[SOLUTION.md](./SOLUTION.md)**; os internals (como o dbt compila Jinja em SQL, ordena o DAG, e materializa view vs table vs incremental) estão no **[TECHNICAL.md](./TECHNICAL.md)**.
 
 ## O problema que este capítulo resolve
 
@@ -66,12 +66,10 @@ O dbt gera uma query que verifica: se `cliente_id` tiver nulo ou duplicata, o te
 ## Etapa 2 — Criar modelos de staging
 
 ### O que fazer
-Um modelo por tabela da origem:
-- `stg_clientes.sql`: SELECT de `raw_cliente`, CAST `cliente_id` para INT, `nome` para VARCHAR, `cidade` para VARCHAR, `email` para VARCHAR.
+Modele as fontes necessárias para os marts de vendas.
 - `stg_produtos.sql`: JOIN com `raw_categoria` para desnormalizar.
 - `stg_pedidos.sql`: CAST de datas, status.
 - `stg_itens_pedido.sql`: CAST de quantidade e preço.
-- `stg_pagamentos.sql`: CAST de valor e data.
 
 ### Decisões de design
 - *Materialização como view*: staging não duplica dados. Sempre reflete raw atual.
@@ -99,7 +97,7 @@ Um modelo por tabela da origem:
 ## Etapa 4 — Adicionar testes e documentação
 
 ### O que fazer
-- `models/staging/schema.yml`: sources (apontando para raw_*), testes de not_null e unique em PKs, relationships entre staging models.
+- `models/staging/sources.yml` declara as tabelas raw. `models/schema.yml` declara os testes de chaves e dos marts.
 - Rodar `dbt test` e verificar que tudo passa.
 - Rodar `dbt docs generate` e `dbt docs serve` para ver o DAG visual e a documentação.
 

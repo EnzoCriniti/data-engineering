@@ -1,10 +1,10 @@
 # Cap. 06 — Ingestão de API externa: múltiplas fontes na plataforma
 
-> **Aula deste capítulo.** Você aprende a ingerir uma fonte que você **não controla** — uma API REST com indisponibilidade, rate limiting, paginação e contrato instável. A orientação está aqui; o código do `extract.py` e do `staging.sql` está no **[SOLUTION.md](./SOLUTION.md)**; os internals (backoff exponencial, cursor vs offset, semântica do `ON CONFLICT`) estão no **[TECHNICAL.md](./TECHNICAL.md)**.
+> **Aula deste capítulo.** Você aprende a ingerir uma fonte que você **não controla** — uma API REST com indisponibilidade, rate limiting, paginação e contrato instável. A orientação está aqui; os links para o código estão no **[SOLUTION.md](./SOLUTION.md)**; os internals (backoff exponencial, cursor vs offset, semântica do `ON CONFLICT`) estão no **[TECHNICAL.md](./TECHNICAL.md)**.
 
 ## O problema que este capítulo resolve
 
-Até agora, a plataforma depende de uma única fonte — o OLTP interno. Mas a NuvemStore tem frota própria de entrega, e os dados logísticos vêm de um sistema externo via API REST. A plataforma precisa ingerir dados que ela não controla: com contratos HTTP, paginação, rate limiting e falhas de disponibilidade.
+Até agora, a plataforma depende de uma única fonte — o OLTP interno. A NuvemStore terceirizou parte das entregas e recebe ocorrências da Transportadora X por API REST. A plataforma precisa ingerir dados que ela não controla: com contratos HTTP, paginação, rate limiting e falhas de disponibilidade.
 
 Este capítulo adiciona a segunda fonte de dados ao pipeline e cria a dor que justifica orquestração no capítulo 07.
 
@@ -31,7 +31,7 @@ O extractor deve gravar em staging, não no modelo final. Staging preserva o pay
 
 ### Idempotência por janela
 
-O extractor opera em janelas temporais (`updated_after >= last_success`). Se uma janela falha no meio, ela pode ser re-executada sem duplicar dados no destino. O padrão é DELETE+INSERT por janela ou UPSERT por chave natural.
+O extractor opera em janelas temporais (`updated_since` inclusivo com sobreposição em torno do checkpoint). Se uma janela falha no meio, ela pode ser re-executada sem duplicar dados no destino. O padrão é DELETE+INSERT por janela ou UPSERT por chave natural.
 
 **Exemplo trabalhado — por que UPSERT e não INSERT puro.** A janela das 14h carrega a entrega `E-50` com status `em_transito`. O job cai logo depois e você re-roda a mesma janela. Com `INSERT` puro, `E-50` entraria de novo → duplicata, e qualquer `COUNT` ou `SUM` mente. Com `INSERT ... ON CONFLICT (entrega_id) DO UPDATE`, a segunda execução *atualiza* a linha existente em vez de criar outra — e se o status mudou para `entregue` nesse meio-tempo, o UPSERT já reflete o valor novo. Re-rodar a janela é seguro por construção: é isso que "idempotência por janela" significa na prática.
 
@@ -40,12 +40,12 @@ O extractor opera em janelas temporais (`updated_after >= last_success`). Se uma
 ## Etapa 1 — Criar o mock da API externa
 
 ### Contexto
-Em um portfolio local, não dependemos de uma API real. Criamos um mock usando um JSON estático servido por um container. Isso simula o contrato da API logística.
+Em um portfolio local, não dependemos de uma API real. O mock expõe o contrato HTTP da transportadora e usa uma fixture JSON no modo de estudo.
 
 ### O que fazer
-- `api/entregas.json`: JSON com dados de entregas (entrega_id, pedido_id, status, data_ocorrencia, latitude, longitude, velocidade).
-- Servir com `python -m http.server` ou nginx em um container.
-- docker-compose com serviço `api-mock` servindo o JSON.
+- `api/entregas.json` contém IDs de entrega e pedido, status, prazo e timestamps.
+- `api/app.py` serve `/entregas` com chave, cursor e limites por data.
+- O serviço `transportadora` também publica `/health`.
 
 ### ⚠️ Armadilhas
 - JSON com encoding diferente de UTF-8 causa erros silenciosos de parsing.
@@ -56,16 +56,16 @@ Em um portfolio local, não dependemos de uma API real. Criamos um mock usando u
 ## Etapa 2 — Implementar o extractor batch
 
 ### Contexto
-Script Python que consome a API, valida o payload e grava em staging no Postgres.
+Script Python que consome a API, valida o payload e grava em staging no DuckDB.
 
 ### Decisões de design
 - *Retry com backoff*: `time.sleep(2 ** attempt)` para falhas transitórias (HTTP 429, 503).
-- *Validação de schema*: verificar que campos esperados existem antes de inserir. Logar campos extras sem falhar (forward-compatibility).
-- *Staging SQL*: `CREATE TABLE IF NOT EXISTS staging_entregas (...)` com dados tipados a partir do JSON.
+- *Validação de schema*: verificar que campos esperados existem antes de inserir. Preservar campos extras no payload JSON.
+- *Staging SQL*: `CREATE TABLE IF NOT EXISTS staging.transportadora_entregas (...)` com dados tipados a partir do JSON.
 - *UPSERT por `entrega_id`*: `INSERT ... ON CONFLICT (entrega_id) DO UPDATE` garante idempotência.
 
 ### O que fazer
-`extractor/extract.py`: faz GET na API, parseia JSON, valida campos obrigatórios, insere em staging_entregas com UPSERT. Loga contagens.
+`extractor/extract.py`: faz GET na API, parseia JSON, valida campos obrigatórios, faz upsert de versões mais novas e confirma o checkpoint junto com a janela. Registra contagens de linhas gravadas e ignoradas.
 
 ### ⚠️ Armadilhas
 - Não tratar HTTP 429: o extractor pode ser bloqueado pela API.
@@ -77,16 +77,16 @@ Script Python que consome a API, valida o payload e grava em staging no Postgres
 ## Etapa 3 — Criar o schema de staging (`extractor/staging.sql`)
 
 ### O que fazer
-DDL da tabela `staging_entregas` com colunas mapeadas do JSON, chave primária em `entrega_id`, `CREATE TABLE IF NOT EXISTS`.
+DDL da tabela `staging.transportadora_entregas` com colunas mapeadas do JSON, chave primária em `entrega_id`, `CREATE TABLE IF NOT EXISTS`.
 
 ---
 
 ## ✅ Checklist final
 
 - [ ] Mock da API serve JSON corretamente
-- [ ] Extractor roda e popula staging_entregas sem erro
+- [ ] Extractor roda e popula staging.transportadora_entregas sem erro
 - [ ] Rodar extractor duas vezes não duplica registros (UPSERT)
-- [ ] COUNT de staging_entregas = COUNT de entregas no JSON
+- [ ] COUNT de staging.transportadora_entregas = COUNT de entregas no JSON
 - [ ] Script compila: `python -m py_compile extractor/extract.py`
 
 Compreensão (você entendeu — responda sem olhar):

@@ -1,6 +1,6 @@
 # Cap. 07 — Orquestração com Airflow: coordenando pipelines
 
-> **Aula deste capítulo.** Você aprende a coordenar jobs independentes com **Airflow** — DAGs, dependências, retries, backfill e observabilidade. A orientação está aqui; o código da DAG `nuvemstore_daily` está no **[SOLUTION.md](./SOLUTION.md)**; os internals (scheduler, executor, parsing de DAG, por que Airflow orquestra mas não processa) estão no **[TECHNICAL.md](./TECHNICAL.md)**.
+> **Aula deste capítulo.** Você aprende a coordenar jobs independentes com **Airflow** — DAGs, dependências, retries, backfill e observabilidade. A orientação está aqui; o link para a DAG `nuvemstore_daily` está no **[SOLUTION.md](./SOLUTION.md)**; os internals (scheduler, executor, parsing de DAG, por que Airflow orquestra mas não processa) estão no **[TECHNICAL.md](./TECHNICAL.md)**.
 
 ## O problema que este capítulo resolve
 
@@ -17,7 +17,7 @@ Com OLTP, API externa e dbt, a plataforma tem três jobs independentes com depen
 
 O Airflow organiza tarefas em DAGs — grafos sem ciclos. Uma tarefa pode depender de outra, mas a cadeia não pode voltar ao início. Isso garante que a execução tem uma ordem determinística.
 
-**Exemplo trabalhado — por que "acíclico" não é detalhe.** A DAG da NuvemStore é `[ingest_oltp, ingest_api] >> run_dbt`: as duas ingestões rodam em paralelo, e o dbt só dispara quando *ambas* terminam. O Airflow consegue calcular essa ordem porque o grafo não tem ciclos — ele faz uma ordenação topológica e sabe que `run_dbt` vem depois. Se por engano você criasse `run_dbt >> ingest_oltp` *além* da aresta existente, teria um ciclo (`ingest → dbt → ingest`), e não existe "primeiro" — o Airflow recusa o DAG em vez de rodar para sempre. É a propriedade acíclica que torna "qual a ordem?" uma pergunta com resposta.
+**Exemplo trabalhado — por que "acíclico" não é detalhe.** A cadeia de carga da NuvemStore é `carga_oltp >> carga_api >> dbt_build`. O dbt dispara depois das duas ingestões. O Airflow consegue calcular essa ordem porque o grafo não tem ciclos — ele faz uma ordenação topológica e sabe que `run_dbt` vem depois. Se por engano você criasse `dbt_build >> carga_oltp` *além* da aresta existente, teria um ciclo (`ingest → dbt → ingest`), e não existe "primeiro" — o Airflow recusa o DAG em vez de rodar para sempre. É a propriedade acíclica que torna "qual a ordem?" uma pergunta com resposta.
 
 ### Componentes do Airflow
 
@@ -45,19 +45,18 @@ A TaskFlow API (`@task` decorator) simplifica DAGs simples em Python. Operators 
 ## Etapa 1 — Criar o docker-compose.yml do Airflow
 
 ### Contexto
-Airflow em Docker precisa de: webserver, scheduler, metadata database (Postgres), e opcionalmente um worker. O setup oficial usa o `docker-compose.yaml` da documentação, mas aqui fazemos um compose mais enxuto e educativo.
+O ambiente deste capítulo usa o scheduler com LocalExecutor e um PostgreSQL de metadados. A CLI consulta o estado das execuções.
 
 ### Decisões de design
 - *CeleryExecutor vs LocalExecutor*: LocalExecutor é suficiente para este capítulo — não precisamos de workers distribuídos.
 - *Metadata database*: Postgres separado do OLTP — o Airflow tem seu próprio banco.
-- *Volumes montados*: `./airflow/dags` para os DAGs, logs em volume nomeado.
+- *Volumes montados*: logs e metadados em volumes nomeados. A imagem inclui o DAG.
 
 ### O que fazer
-Compose com: `airflow-init` (roda `airflow db init`), `airflow-webserver` (porta 8080), `airflow-scheduler`, `postgres-airflow` (metadata), `oltp` (fonte), `api-mock` (fonte).
+O Compose inclui `airflow-init` para executar `airflow db migrate`, `airflow-scheduler` para executar as tarefas e `airflow-db` para os metadados.
 
 ### ⚠️ Armadilhas
-- Airflow 2.x exige `airflow db init` antes de qualquer coisa. Sem o init, scheduler e webserver falham silenciosamente.
-- Não definir `AIRFLOW__CORE__FERNET_KEY`: warnings de segurança nos logs.
+- O scheduler depende da migração bem-sucedida dos metadados.
 - Dar pouca memória ao scheduler: DAGs grandes travam.
 
 ---
@@ -65,16 +64,16 @@ Compose com: `airflow-init` (roda `airflow db init`), `airflow-webserver` (porta
 ## Etapa 2 — Criar a DAG principal
 
 ### Contexto
-A DAG coordena: (1) ingerir OLTP, (2) ingerir API externa, (3) rodar dbt. As ingestões podem rodar em paralelo; dbt espera ambas terminarem.
+A DAG coordena: (1) ingerir OLTP, (2) ingerir API externa, (3) rodar dbt. As duas cargas escrevem no mesmo DuckDB e executam em sequência.
 
 ### Decisões de design
-- *Schedule diário*: `schedule_interval='@daily'`. Simula um pipeline batch recorrente.
-- *Retries*: 2 retries com delay de 5 minutos para tarefas de ingestão (falhas de rede são transitórias).
-- *Dependências*: `[ingest_oltp, ingest_api] >> run_dbt`. Notação bitshift do Airflow.
+- *Schedule diário*: `schedule='0 6 * * *'` em UTC. Simula um pipeline batch recorrente.
+- *Retries*: 2 retries com espera configurável para tarefas de ingestão (falhas de rede são transitórias).
+- *Dependências*: `carga_oltp >> carga_api >> dbt_build`. Notação bitshift do Airflow.
 - *Catchup desabilitado*: `catchup=False` para não reprocessar todo o histórico ao ativar a DAG.
 
 ### O que fazer
-`airflow/dags/nuvemstore_daily.py` com três tasks: `ingest_oltp` (BashOperator chamando o pipeline de extração), `ingest_api` (BashOperator chamando o extractor), `run_dbt` (BashOperator chamando `dbt run && dbt test`).
+`airflow/dags/nuvemstore_daily.py` chama os scripts de simulação, carga OLTP, carga API, build dbt e verificação de SLA. Em backfill, passa o intervalo lógico para o extractor.
 
 ### ⚠️ Armadilhas
 - `BashOperator` sem `set -e` no script: falhas silenciosas — o operador retorna success mesmo se um comando intermediário falhou.
@@ -89,11 +88,11 @@ A DAG coordena: (1) ingerir OLTP, (2) ingerir API externa, (3) rodar dbt. As ing
 
 ## ✅ Checklist final
 
-- [ ] `docker compose up -d` sobe Airflow com UI acessível em localhost:8080
-- [ ] DAG `nuvemstore_daily` aparece na UI
-- [ ] Trigger manual executa as 3 tasks em ordem correta
-- [ ] Ingestões rodam em paralelo; dbt espera ambas
-- [ ] Logs de cada task são acessíveis pela UI
+- [ ] O Compose sobe o scheduler após a migração dos metadados
+- [ ] DAG `nuvemstore_daily` aparece em `airflow dags list`
+- [ ] Trigger manual executa as cinco tarefas em ordem
+- [ ] O dbt só roda após as duas cargas
+- [ ] Os logs das tarefas persistem no volume `airflow-logs`
 - [ ] Re-trigger da mesma run produz o mesmo resultado (idempotência)
 
 Compreensão (você entendeu — responda sem olhar):

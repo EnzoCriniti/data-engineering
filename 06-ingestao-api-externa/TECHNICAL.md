@@ -14,7 +14,7 @@ O ecossistema moderno de ingestão batch nasceu da explosão de SaaS: Salesforce
 
 Uma extração batch de API normalmente segue este fluxo:
 
-1. definir janela de busca, como `atualizado_em >= ultimo_sucesso`;
+1. definir janela de busca, como `updated_at >= ultimo_sucesso`;
 2. chamar endpoint paginado;
 3. validar schema do payload;
 4. gravar em staging;
@@ -29,7 +29,7 @@ APIs externas trazem dores específicas que bancos internos não têm:
 - **Rate limiting**: a maioria das APIs limita requisições por segundo ou por minuto. Ultrapassar o limite resulta em HTTP 429 e possível bloqueio temporário.
 - **Paginação**: datasets grandes são retornados em páginas. O extractor precisa iterar até a última página, tratando cursores ou offsets.
 - **Mudança de contrato**: o fornecedor pode adicionar, remover ou renomear campos sem aviso. O staging deve gravar o payload cru; transformações rígidas ficam na camada seguinte.
-- **Dados atrasados ou fora de ordem**: janelas incrementais por `atualizado_em` podem perder registros que foram atualizados durante a janela anterior mas não apareceram a tempo.
+- **Dados atrasados ou fora de ordem**: janelas incrementais por `updated_at` podem perder registros que foram atualizados durante a janela anterior mas não apareceram a tempo.
 - **Idempotência no destino**: rodar o extractor duas vezes para a mesma janela não deve duplicar dados. O padrão é UPSERT por chave natural ou DELETE+INSERT por janela.
 
 ## Tecnologias equivalentes
