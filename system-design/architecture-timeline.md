@@ -94,4 +94,10 @@ Componentes centrais:
 - features históricas e recentes;
 - base para scoring de fraude.
 
-Estado final: a plataforma atende BI, operações, near real-time e casos iniciais de ML.
+Estado nesta fase: a arquitetura atende BI, Operações e Risco, com requisitos de latência diferentes.
+
+## Fase 8 — Controles operacionais e consolidação
+
+Capítulos 14 a 17.
+
+À medida que os times passam a depender dos mesmos dados, a NuvemStore precisa recriar ambientes, detectar mudanças nas fontes e acompanhar a atualização das tabelas. Os capítulos finais descrevem infraestrutura como código, contratos de dados e alertas de atraso. O [capstone](../17-capstone-consolidacao) reúne o desenho final e as evidências coletadas.

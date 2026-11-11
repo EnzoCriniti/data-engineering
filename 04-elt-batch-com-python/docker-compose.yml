@@ -1,0 +1,42 @@
+services:
+  oltp:
+    image: postgres:16
+    container_name: p04-oltp
+    ports:
+      - "${OLTP_PORT:-5435}:5432"
+    environment:
+      POSTGRES_DB: nuvemstore
+      POSTGRES_USER: nuvemstore
+      POSTGRES_PASSWORD: nuvemstore
+    volumes:
+      - oltp-data:/var/lib/postgresql/data
+      - ../00-modelagem-transacional/ddl/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+    healthcheck:
+      test: ["CMD", "pg_isready", "-h", "127.0.0.1", "-U", "nuvemstore", "-d", "nuvemstore"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  seeder:
+    build: ../00-modelagem-transacional/seed
+    container_name: p04-seeder
+    environment:
+      DATABASE_URL: postgresql://nuvemstore:nuvemstore@oltp:5432/nuvemstore
+    depends_on:
+      oltp: { condition: service_healthy }
+    profiles: [jobs]
+
+  pipeline:
+    build: ./pipeline
+    container_name: p04-pipeline
+    environment:
+      OLTP_URL: postgresql://nuvemstore:nuvemstore@oltp:5432/nuvemstore
+      DUCKDB_PATH: /data/warehouse/nuvemstore.duckdb
+    volumes:
+      - ./data/warehouse:/data/warehouse
+    depends_on:
+      oltp: { condition: service_healthy }
+    profiles: [jobs]
+
+volumes:
+  oltp-data:

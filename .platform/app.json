@@ -1,0 +1,10 @@
+{
+  "type": "compose",
+  "composePath": "deploy/nas/docker-compose.yml",
+  "envExamplePath": "deploy/nas/.env.example",
+  "staging": {
+    "mode": "overlay",
+    "overlayPath": "deploy/nas/docker-compose.staging.yml"
+  },
+  "services": {}
+}

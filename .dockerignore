@@ -1,0 +1,10 @@
+**
+!00-modelagem-transacional/ddl/schema.sql
+!00-modelagem-transacional/seed/requirements.txt
+!00-modelagem-transacional/seed/seed.py
+!03-warehouse-dedicado/warehouse/schema.sql
+!03-warehouse-dedicado/warehouse/migrate.py
+!04-elt-batch-com-python/pipeline/requirements.txt
+!04-elt-batch-com-python/pipeline/pipeline.py
+!04-elt-batch-com-python/pipeline/verify.py
+!deploy/nas/jobs/*.py

@@ -31,6 +31,14 @@ jobs:
             if [ -f "$dir/.env.example" ]; then cp "$dir/.env.example" "$dir/.env"; fi
             (cd "$dir" && docker compose config -q)
           done
+      - name: Validar Compose da NuvemStore no NAS
+        working-directory: deploy/nas
+        env:
+          OLTP_PASSWORD: ci-sintetico-oltp
+          WAREHOUSE_PASSWORD: ci-sintetico-warehouse
+        run: |
+          docker compose --profile jobs config -q
+          docker compose -f docker-compose.yml -f docker-compose.staging.yml --profile jobs config -q
 
   python-syntax:
     name: Sintaxe Python (geradores, jobs, diagramas)
@@ -43,6 +51,72 @@ jobs:
       - name: py_compile em todos os .py
         run: |
           find . -name '*.py' -print0 | xargs -0 -I{} python -m py_compile "{}"
+
+  batch-e2e:
+    name: Fundação batch (PostgreSQL → DuckDB)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: 04-elt-batch-com-python
+    steps:
+      - uses: actions/checkout@v4
+      - name: Subir o PostgreSQL e popular a origem
+        run: |
+          docker compose up -d --wait oltp
+          docker compose run --rm --no-deps --build -T seeder
+      - name: Validar a carga e o reprocessamento
+        run: |
+          docker compose run --rm --no-deps --build -T pipeline
+          docker compose run --rm --no-deps -T pipeline python - < pipeline/verify.py
+          docker compose run --rm --no-deps -T pipeline
+          docker compose run --rm --no-deps -T pipeline python - < pipeline/verify.py
+      - name: Mostrar logs do PostgreSQL em caso de falha
+        if: failure()
+        run: docker compose logs --no-color oltp
+      - name: Encerrar o ambiente de teste
+        if: always()
+        run: docker compose down --volumes
+
+  staging-e2e:
+    name: Fundação batch (staging e persistência)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: deploy/nas
+    env:
+      COMPOSE_PROJECT_NAME: nuvemstore-ci-staging
+      OLTP_PASSWORD: ci-sintetico-oltp
+      WAREHOUSE_PASSWORD: ci-sintetico-warehouse
+    steps:
+      - uses: actions/checkout@v4
+      - name: Rodar o lote e conferir persistência após recriar os containers
+        run: |
+          compose=(docker compose -f docker-compose.yml -f docker-compose.staging.yml)
+          "${compose[@]}" up --build -d --wait oltp
+          "${compose[@]}" run --rm --build -T seeder
+          "${compose[@]}" run --rm -T seeder
+
+          "${compose[@]}" up --build -d --wait warehouse
+          "${compose[@]}" run --rm --build -T pipeline
+          "${compose[@]}" run --rm --build -T simulador
+          "${compose[@]}" run --rm -T simulador
+          "${compose[@]}" run --rm --build -T agendador daily
+
+          pedidos=$("${compose[@]}" exec -T oltp psql -U nuvemstore -Atc 'SELECT COUNT(*) FROM pedido')
+          test "$pedidos" = 205
+          receita=$("${compose[@]}" exec -T warehouse psql -U warehouse -Atc \
+            'SELECT COUNT(*), SUM(valor_total) FROM analytics.fct_vendas')
+
+          "${compose[@]}" stop
+          "${compose[@]}" down
+          "${compose[@]}" up -d --wait oltp warehouse
+          test "$pedidos" = "$("${compose[@]}" exec -T oltp psql -U nuvemstore -Atc 'SELECT COUNT(*) FROM pedido')"
+          test "$receita" = "$("${compose[@]}" exec -T warehouse psql -U warehouse -Atc \
+            'SELECT COUNT(*), SUM(valor_total) FROM analytics.fct_vendas')"
+          "${compose[@]}" run --rm -T pipeline verify
+      - name: Encerrar o ambiente de teste
+        if: always()
+        run: docker compose -f docker-compose.yml -f docker-compose.staging.yml down
 
   dbt-parse:
     name: Validar projetos dbt (parse)

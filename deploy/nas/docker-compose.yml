@@ -1,0 +1,103 @@
+x-postgres: &postgres
+  mem_limit: 384m
+  cpus: "0.5"
+  restart: unless-stopped
+  healthcheck:
+    test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U \"$$POSTGRES_USER\" -d \"$$POSTGRES_DB\""]
+    interval: 5s
+    timeout: 5s
+    retries: 12
+
+x-job: &job
+  build:
+    context: ../..
+    dockerfile: deploy/nas/jobs.Dockerfile
+  mem_limit: 384m
+  cpus: "0.75"
+  volumes:
+    - duckdb-data:/data/warehouse
+  depends_on:
+    oltp: { condition: service_healthy }
+
+x-job-env: &job-env
+  OLTP_PASSWORD: ${OLTP_PASSWORD:?defina OLTP_PASSWORD}
+  DUCKDB_PATH: /data/warehouse/nuvemstore.duckdb
+
+x-pipeline-env: &pipeline-env
+  <<: *job-env
+  WAREHOUSE_PASSWORD: ${WAREHOUSE_PASSWORD:?defina WAREHOUSE_PASSWORD}
+
+x-pipeline-deps: &pipeline-deps
+  oltp: { condition: service_healthy }
+  warehouse: { condition: service_healthy }
+
+services:
+  oltp:
+    <<: *postgres
+    build:
+      context: ../..
+      dockerfile: deploy/nas/postgres.Dockerfile
+      args:
+        SCHEMA_PATH: 00-modelagem-transacional/ddl/schema.sql
+    environment:
+      POSTGRES_DB: nuvemstore
+      POSTGRES_USER: nuvemstore
+      POSTGRES_PASSWORD: ${OLTP_PASSWORD:?defina OLTP_PASSWORD}
+    volumes:
+      - oltp-data:/var/lib/postgresql/data
+
+  warehouse:
+    <<: *postgres
+    build:
+      context: ../..
+      dockerfile: deploy/nas/postgres.Dockerfile
+      args:
+        SCHEMA_PATH: 03-warehouse-dedicado/warehouse/schema.sql
+    environment:
+      POSTGRES_DB: warehouse
+      POSTGRES_USER: warehouse
+      POSTGRES_PASSWORD: ${WAREHOUSE_PASSWORD:?defina WAREHOUSE_PASSWORD}
+    volumes:
+      - warehouse-data:/var/lib/postgresql/data
+
+  seeder:
+    <<: *job
+    command: [seed]
+    environment:
+      <<: *job-env
+      SEED_CLIENTES: "250"
+      SEED_PEDIDOS: "1200"
+    profiles: [jobs]
+
+  simulador:
+    <<: *job
+    command: [simulate]
+    environment:
+      <<: *job-env
+      SIM_PEDIDOS: "30"
+    profiles: [jobs]
+
+  pipeline:
+    <<: *job
+    command: [pipeline]
+    environment: *pipeline-env
+    depends_on: *pipeline-deps
+    profiles: [jobs]
+
+  agendador:
+    <<: *job
+    command: [schedule]
+    environment:
+      <<: *pipeline-env
+      SIM_PEDIDOS: "30"
+    depends_on: *pipeline-deps
+    restart: unless-stopped
+
+volumes:
+  oltp-data: {}
+  warehouse-data: {}
+  duckdb-data: {}
+
+networks:
+  default:
+    internal: true

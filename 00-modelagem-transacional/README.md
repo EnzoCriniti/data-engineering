@@ -8,9 +8,9 @@ Engenharia de dados não começa no pipeline; começa em **entender o modelo da 
 
 ## Cenário de negócio
 
-A **NuvemStore** (o e-commerce que acompanha toda a trilha) precisa de um banco que sustente o site: registrar clientes, produtos, pedidos e itens de pedido com **escritas rápidas, consistentes e sem redundância**. Esse é o trabalho de um modelo **OLTP** (Online Transaction Processing).
+A NuvemStore operava com um site, um backend e um único PostgreSQL. Quando o cliente fechava a compra, o backend gravava o pedido, os itens e os preços praticados. A situação do pagamento podia mudar depois da compra. Para despachar o pedido, a operação registrava a entrega e o entregador na mesma base. O modelo OLTP dá suporte a essas transações e mantém o vínculo entre cliente, pedido, pagamento e entrega.
 
-> 📋 O domínio completo — negócio, fontes e necessidades futuras — está no [`COMPANY.md`](../COMPANY.md). As decisões de modelagem abaixo derivam diretamente dele: por exemplo, separar **pagamento** como entidade própria existe para viabilizar o CDC de fraude do cap. 11.
+O pagamento tem status e data de atualização próprios porque seu ciclo de vida continua depois que o pedido é criado. O capítulo 11 reaproveita essa estrutura para capturar mudanças nos pagamentos. A [visão da empresa](../COMPANY.md#como-a-loja-funcionava-no-início) explica como esses dados passam a ser usados fora da operação.
 
 ## O modelo (normalizado)
 

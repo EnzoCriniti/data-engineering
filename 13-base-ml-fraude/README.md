@@ -8,8 +8,8 @@ A NuvemStore quer detectar pagamentos suspeitos. O modelo não precisa ser compl
 
 - dados transacionais de pagamento e pedido (OLTP);
 - histórico do cliente no lakehouse;
-- ocorrências logísticas da API externa;
-- métricas quase em tempo real vindas do streaming.
+- ocorrências de entregas anteriores, quando já conhecidas no instante do pagamento;
+- métricas do streaming disponíveis antes da decisão, quando houver uma relação útil com o risco.
 
 ## O que esta etapa mostra
 
@@ -46,4 +46,4 @@ tempo     -> feature_ts (quando a feature foi calculada)
 
 ## A dor que sobra
 
-Com a base de ML preparada, a trilha fecha mostrando que a plataforma não serve apenas dashboards — ela sustenta produtos analíticos avançados, com dados confiáveis, históricos e em tempo real.
+BI, Operações e Risco passam a depender dos mesmos dados históricos. Se o ambiente de homologação precisar ser recriado, a equipe precisa recuperar as mesmas configurações de armazenamento para reproduzir os resultados. O [capítulo 14](../14-iac-cloud-localstack) trata desse problema.

@@ -1,6 +1,6 @@
 # Runbook — Capítulo 17: capstone de consolidação
 
-> Guia rápido. Status atual: **🟢 consolidação** — este capítulo não sobe ambiente próprio; ele consolida e demonstra os capítulos anteriores. O roteiro de prints está no [GUIDE.md](./GUIDE.md).
+> Status atual **Documentado**. Este capítulo reúne a arquitetura final planejada e as evidências obtidas ao longo da trilha. O roteiro de capturas está no [GUIDE.md](./GUIDE.md).
 
 ## O que este capítulo entrega
 
@@ -34,6 +34,8 @@ python diagrams/architecture.py   # gera assets/17-arquitetura.png
 <!-- ![star schema](./assets/01-star-schema.png) -->
 
 **Batch analytics (04–06)**
+
+- [Capítulo 04 — carga e reconciliação do ELT](../docs/diario/etapa-1.md#provas)
 
 <!-- ![dbt lineage](./assets/05-dbt-lineage.png) -->
 <!-- ![mart receita](./assets/06-mart-receita.png) -->

@@ -2,9 +2,19 @@
 
 ## Contexto
 
-A NuvemStore e um e-commerce com entregas próprias e integracao com transportadora externa.
+A NuvemStore começou com uma loja online e frota própria. A integração com a transportadora externa entrou quando a empresa passou a terceirizar parte das entregas.
 
-Fluxo simplificado:
+## Arquitetura no início
+
+```text
+Cliente → Site e checkout → Backend da loja → PostgreSQL transacional
+Frota própria → Operação de entregas → Mesmo PostgreSQL
+Comercial → Consultas SQL de vendas → Mesmo PostgreSQL
+```
+
+O backend registrava clientes, catálogo, pedidos e pagamentos. A operação registrava entregadores, despachos e status de entrega na mesma base. O Comercial passou a consultar esse histórico quando precisou acompanhar receita e produtos mais vendidos. O [capítulo 00](../00-modelagem-transacional) representa a aplicação e a operação com um schema PostgreSQL e um gerador de dados sintéticos.
+
+## Arquitetura após a evolução
 
 ```text
 Cliente

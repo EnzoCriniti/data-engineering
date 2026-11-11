@@ -6,6 +6,8 @@
 
 A NuvemStore cresceu e o time de analytics passou a depender dos relatórios. Um bug silencioso numa transformação pode gerar decisão errada de negócio. A dor agora não é mover dados; é **confiar** nas transformações.
 
+O lote do capítulo 04 fornece uma referência de cálculo. Nesta etapa, o carregamento passa a alimentar o warehouse Postgres do capítulo 03. O dbt materializa os marts nesse banco, compartilhado com o Metabase. A conferência é comparar a receita e a contagem de pedidos dos dois resultados usando a mesma origem.
+
 ## Por que dbt entra aqui
 
 O capítulo 04 provou que SQL de transformação solto não escala em confiabilidade. O dbt transforma esse SQL num projeto de software versionado:
@@ -24,7 +26,7 @@ O capítulo 04 provou que SQL de transformação solto não escala em confiabili
 
 ## Conceitos
 
-**dbt é T, não EL.** dbt assume que o dado já está no warehouse (carregado pelo ELT do cap. 04) e cuida só da **transformação**. Ele não extrai nem carrega da origem.
+**Transformação no warehouse.** O dbt lê as tabelas raw depois que o carregamento batch as grava no Postgres.
 
 **Camadas staging → marts.** `staging` limpa e padroniza o raw (tipos, nomes, deduplicação) numa relação 1:1 com a origem. `marts` aplica regras de negócio e agrega para consumo. Separar as duas evita que regra de negócio se misture com limpeza técnica.
 

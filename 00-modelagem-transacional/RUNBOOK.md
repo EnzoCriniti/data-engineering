@@ -11,14 +11,14 @@ O capítulo 00 não tem um `docker-compose.yml` próprio — ele é a **fundaç�
 ## Pré-requisitos
 
 - Docker e Docker Compose instalados.
-- Porta `5434` livre (ou ajuste `DB_PORT` no `.env`).
+- Porta `5433` livre (ou ajuste `PG_PORT` no `.env` do capítulo 02).
 
 ## Subir a origem (via capítulo 02)
 
 ```bash
 cd ../02-dimensional-no-oltp
 cp .env.example .env
-docker compose up -d db
+docker compose up -d --wait postgres
 ```
 
 O Postgres sobe e o `schema.sql` deste capítulo é aplicado automaticamente na inicialização (montado em `/docker-entrypoint-initdb.d`). **Você não roda o DDL na mão.**
@@ -32,15 +32,15 @@ docker compose run --rm seeder
 Saída esperada:
 
 ```text
-Seed concluido: 250 clientes, 1200 pedidos.
+Seed concluído: 250 clientes, 1200 pedidos.
 ```
 
-O seeder é **idempotente**: rodar de novo com `SEED_RESET=true` (padrão) limpa as tabelas e recria os dados com a mesma seed (42), então o resultado é sempre o mesmo.
+O seeder é **idempotente**: rodar de novo com `SEED_RESET=true` (padrão) limpa as tabelas e recria os dados com a seed 42 e datas relativas à data de execução.
 
 ## Conferir que a origem está populada
 
 ```bash
-docker compose exec db psql -U app -d nuvemstore -c "
+docker compose exec postgres psql -U nuvemstore -d nuvemstore -c "
   SELECT 'cliente' AS tabela, COUNT(*) FROM cliente
   UNION ALL SELECT 'pedido', COUNT(*) FROM pedido
   UNION ALL SELECT 'item_pedido', COUNT(*) FROM item_pedido
@@ -51,11 +51,11 @@ docker compose exec db psql -U app -d nuvemstore -c "
 Você deve ver contagens > 0 em todas as tabelas. Uma consulta de negócio rápida para ver o dado "vivo":
 
 ```bash
-docker compose exec db psql -U app -d nuvemstore -c "
+docker compose exec postgres psql -U nuvemstore -d nuvemstore -c "
   SELECT c.nome AS categoria, SUM(i.quantidade * i.preco_unitario) AS receita
   FROM item_pedido i
-  JOIN produto p ON p.id = i.produto_id
-  JOIN categoria c ON c.id = p.categoria_id
+  JOIN produto p ON p.produto_id = i.produto_id
+  JOIN categoria c ON c.categoria_id = p.categoria_id
   GROUP BY 1 ORDER BY 2 DESC;"
 ```
 
@@ -69,14 +69,14 @@ Repare: já para uma pergunta simples ("receita por categoria") foram necessári
 | `SEED_PEDIDOS` | 1200 | Quantidade de pedidos gerados. |
 | `SEED_FRAUDE` | false | Injeta comportamentos suspeitos (ticket anormal, rajada de pagamentos). Usado pelo cap 13. |
 | `SEED_RESET` | true | Limpa antes de popular (idempotência). |
-| `DB_PORT` | 5434 | Porta exposta no host. |
+| `PG_PORT` | 5433 | Porta exposta no host. |
 
 ### Modo de volume maior (cap 13 — ML de fraude)
 
 O detector de fraude precisa de massa na classe minoritária. Para esse caso, suba o seeder maior e com comportamentos suspeitos:
 
 ```bash
-SEED_CLIENTES=5000 SEED_PEDIDOS=60000 SEED_FRAUDE=true docker compose run --rm seeder
+docker compose run --rm -e SEED_CLIENTES=5000 -e SEED_PEDIDOS=60000 -e SEED_FRAUDE=true seeder
 ```
 
 Lembre: `SEED_FRAUDE` gera só o *comportamento*, não a label — a confirmação de fraude chega depois, por processo à parte (ver [cap 13](../13-base-ml-fraude/GUIDE.md)).
@@ -85,7 +85,7 @@ Lembre: `SEED_FRAUDE` gera só o *comportamento*, não a label — a confirmaç�
 
 ```bash
 docker compose down -v   # apaga o volume e os dados
-docker compose up -d db
+docker compose up -d --wait postgres
 docker compose run --rm seeder
 ```
 
