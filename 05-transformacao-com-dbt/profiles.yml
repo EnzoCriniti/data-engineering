@@ -1,0 +1,10 @@
+nuvemstore:
+  target: dev
+  outputs:
+    dev:
+      type: duckdb
+      path: "{{ env_var('DUCKDB_PATH', 'data/warehouse/nuvemstore.duckdb') }}"
+      schema: analytics_dbt
+      threads: 1
+      settings:
+        TimeZone: UTC

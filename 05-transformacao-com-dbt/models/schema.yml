@@ -1,0 +1,33 @@
+version: 2
+models:
+  - name: stg_pedidos
+    columns:
+      - name: pedido_id
+        data_tests: [unique, not_null]
+  - name: stg_itens_pedido
+    columns:
+      - name: item_pedido_id
+        data_tests: [unique, not_null]
+  - name: mart_receita_diaria
+    columns:
+      - name: dia
+        data_tests: [unique, not_null]
+  - name: mart_sla_entregas
+    columns:
+      - name: entrega_id
+        data_tests: [unique, not_null]
+      - name: situacao_sla
+        data_tests:
+          - not_null
+          - accepted_values:
+              values:
+                - atraso_aberto
+                - entregue_com_atraso
+                - no_prazo
+                - devolvido
+                - extraviado
+                - pedido_orfao
+                - pedido_cancelado
+                - prazo_invalido
+                - status_invalido
+                - evento_invalido

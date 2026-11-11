@@ -6,6 +6,11 @@ on:
   pull_request:
     branches: [main]
 
+env:
+  TRANSPORTADORA_API_KEY: ci-sintetico-transportadora
+  AIRFLOW_DB_PASSWORD: ci-sintetico-airflow
+  AIRFLOW_SECRET_KEY: ci-sintetico-sessao
+
 jobs:
   lint-yaml:
     name: Lint YAML (composes + workflows)
@@ -100,7 +105,9 @@ jobs:
           "${compose[@]}" run --rm --build -T pipeline
           "${compose[@]}" run --rm --build -T simulador
           "${compose[@]}" run --rm -T simulador
-          "${compose[@]}" run --rm --build -T agendador daily
+          "${compose[@]}" run --rm -T pipeline
+          # O job de vendas precisa rodar antes da primeira carga da transportadora.
+          "${compose[@]}" run --rm --build -T dbt
 
           pedidos=$("${compose[@]}" exec -T oltp psql -U nuvemstore -Atc 'SELECT COUNT(*) FROM pedido')
           test "$pedidos" = 205
@@ -114,18 +121,40 @@ jobs:
           test "$receita" = "$("${compose[@]}" exec -T warehouse psql -U warehouse -Atc \
             'SELECT COUNT(*), SUM(valor_total) FROM analytics.fct_vendas')"
           "${compose[@]}" run --rm -T pipeline verify
-      - name: Conferir a parada do agendador
-        run: |
-          compose=(docker compose -f docker-compose.yml -f docker-compose.staging.yml)
-          "${compose[@]}" up --build -d --wait agendador
-          scheduler=$("${compose[@]}" ps -q agendador)
-          test -n "$scheduler"
-          "${compose[@]}" stop agendador
-          code=$(docker inspect --format '{{.State.ExitCode}}' "$scheduler")
-          test "$code" -eq 0 || test "$code" -eq 143
       - name: Encerrar o ambiente de teste
         if: always()
         run: docker compose -f docker-compose.yml -f docker-compose.staging.yml down
+
+  entregas-e2e:
+    name: Entregas (API, PostgreSQL e dbt)
+    runs-on: ubuntu-latest
+    env:
+      OLTP_URL: postgresql://nuvemstore:nuvemstore@localhost:5435/nuvemstore
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Preparar dependências
+        run: |
+          pip install -r 05-transformacao-com-dbt/requirements.txt \
+            -r 04-elt-batch-com-python/pipeline/requirements.txt
+      - name: Subir o PostgreSQL e verificar a fase 2
+        run: |
+          docker compose -f 04-elt-batch-com-python/docker-compose.yml up -d --wait oltp
+          python shared/entregas/test_phase2.py
+      - name: Encerrar PostgreSQL
+        if: always()
+        run: docker compose -f 04-elt-batch-com-python/docker-compose.yml down --volumes
+
+  airflow-e2e:
+    name: Entregas (Airflow, retry e backfill)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Exercitar recuperação e backfill
+        run: bash shared/entregas/airflow-e2e.sh
 
   dbt-parse:
     name: Validar projetos dbt (parse)
@@ -136,14 +165,14 @@ jobs:
         with:
           python-version: "3.12"
       - name: Instalar dbt
-        run: pip install dbt-postgres dbt-duckdb
+        run: pip install -r 05-transformacao-com-dbt/requirements.txt
       - name: dbt parse onde houver dbt_project.yml
         run: |
           found=0
           for proj in $(find . -name 'dbt_project.yml' -exec dirname {} \;); do
             found=1
             echo "== parse: $proj =="
-            (cd "$proj" && dbt parse) || exit 1
+            (cd "$proj" && dbt parse --profiles-dir .) || exit 1
           done
           if [ "$found" = "0" ]; then echo "Nenhum projeto dbt ainda — ok (esqueleto)."; fi
 

@@ -6,7 +6,7 @@
 
 A NuvemStore cresceu e o time de analytics passou a depender dos relatórios. Um bug silencioso numa transformação pode gerar decisão errada de negócio. A dor agora não é mover dados; é **confiar** nas transformações.
 
-O lote do capítulo 04 fornece uma referência de cálculo. Nesta etapa, o carregamento passa a alimentar o warehouse Postgres do capítulo 03. O dbt materializa os marts nesse banco, compartilhado com o Metabase. A conferência é comparar a receita e a contagem de pedidos dos dois resultados usando a mesma origem.
+O lote do capítulo 04 fornece uma referência de cálculo. Nesta etapa, o dbt lê o DuckDB da fundação e publica marts testáveis no schema `analytics_dbt`. A conferência é comparar a receita e a contagem de pedidos dos dois resultados usando a mesma origem.
 
 ## Por que dbt entra aqui
 
@@ -22,11 +22,11 @@ O capítulo 04 provou que SQL de transformação solto não escala em confiabili
 
 ## Status desta etapa
 
-**Ambiente base.** O projeto dbt ainda não está implementado; o compose deixa a camada de BI pronta para quando os marts forem materializados.
+**Em validação.** O projeto materializa receita diária e ranking de produtos e executa testes sobre o resultado.
 
 ## Conceitos
 
-**Transformação no warehouse.** O dbt lê as tabelas raw depois que o carregamento batch as grava no Postgres.
+**Transformação no warehouse.** O dbt lê as tabelas raw depois que o carregamento batch as grava no DuckDB.
 
 **Camadas staging → marts.** `staging` limpa e padroniza o raw (tipos, nomes, deduplicação) numa relação 1:1 com a origem. `marts` aplica regras de negócio e agrega para consumo. Separar as duas evita que regra de negócio se misture com limpeza técnica.
 
@@ -38,7 +38,7 @@ O capítulo 04 provou que SQL de transformação solto não escala em confiabili
 
 ## Como executar
 
-Este README descreve o *porquê*. Para subir o ambiente base (e, quando implementado, rodar `dbt build`) veja o **[RUNBOOK.md](./RUNBOOK.md)**.
+Este README descreve o *porquê*. Para subir o ambiente e rodar `dbt build`, veja o **[RUNBOOK.md](./RUNBOOK.md)**.
 
 ## A dor que sobra
 

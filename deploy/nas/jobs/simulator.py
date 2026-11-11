@@ -9,7 +9,11 @@ import psycopg2
 
 
 def append_orders():
-    now = datetime.now(UTC).replace(tzinfo=None)
+    as_of = os.getenv("SIM_AS_OF")
+    timestamp = datetime.fromisoformat(as_of) if as_of else datetime.now(UTC)
+    if timestamp.utcoffset() is None:
+        raise ValueError("SIM_AS_OF deve incluir fuso horário.")
+    now = timestamp.astimezone(UTC).replace(tzinfo=None)
     day = now.date()
     rng = random.Random(day.toordinal())
     order_count = int(os.environ["SIM_PEDIDOS"])
@@ -35,7 +39,15 @@ def append_orders():
         if not all((customers, products, couriers)):
             raise RuntimeError("Execute o seeder antes de simular pedidos.")
 
-        for _ in range(order_count):
+        terceirizar = os.getenv("SIM_TERCEIRIZAR") == "true"
+        if terceirizar:
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS simulacao_transportadora (
+                    pedido_id integer PRIMARY KEY REFERENCES pedido(pedido_id) ON DELETE CASCADE
+                )
+            """)
+
+        for index in range(order_count):
             (customer_id,) = rng.choice(customers)
             (courier_id,) = rng.choice(couriers)
             product_id, price = rng.choice(products)
@@ -53,9 +65,13 @@ def append_orders():
                 "INSERT INTO pagamento (pedido_id, valor, metodo, status, data_pagamento) VALUES (%s, %s, 'pix', 'pago', %s)",
                 (order_id, price * quantity, now),
             )
-            cur.execute(
-                "INSERT INTO entrega (pedido_id, entregador_id, status, data_saida) VALUES (%s, %s, 'em_transito', %s)",
-                (order_id, courier_id, now),
-            )
+            if terceirizar and index % 2 == 0:
+                cur.execute("INSERT INTO simulacao_transportadora VALUES (%s)", (order_id,))
+            else:
+                cur.execute(
+                    "INSERT INTO entrega (pedido_id, entregador_id, status, data_saida) "
+                    "VALUES (%s,%s,'em_transito',%s)",
+                    (order_id, courier_id, now),
+                )
 
     print(f"{day}: {order_count} pedidos acrescentados.")

@@ -16,9 +16,9 @@ Os capítulos detalham as cinco fases da [história da NuvemStore](../README.md#
 
 | Capítulo | Tema | Status | Papel na história |
 | --- | --- | --- | --- |
-| [05](../05-transformacao-com-dbt) | Transformação com dbt | Documentado | Reimplementa transformações manuais como modelos testáveis. |
-| [06](../06-ingestao-api-externa) | Ingestão batch de API externa | Documentado | Adiciona uma fonte externa batch: transportadora. |
-| [07](../07-orquestracao-com-airflow) | Orquestração com Airflow | Documentado | Coordena OLTP, API externa, dbt, retries e backfill. |
+| [05](../05-transformacao-com-dbt) | Transformação com dbt | Em validação | Reimplementa transformações manuais como modelos testáveis. |
+| [06](../06-ingestao-api-externa) | Ingestão batch de API externa | Em validação | Adiciona uma fonte externa batch: transportadora. |
+| [07](../07-orquestracao-com-airflow) | Orquestração com Airflow | Em validação | Coordena OLTP, API externa, dbt, retries e backfill. |
 
 ## 3. Histórico de navegação
 

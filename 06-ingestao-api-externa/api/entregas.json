@@ -1,0 +1,22 @@
+[
+  {
+    "entrega_id": "TRX-000001",
+    "pedido_id": 1,
+    "status": "em_transito",
+    "previsao_entrega": "2026-06-08T14:00:00Z",
+    "ocorrencia": "despachado",
+    "valor_frete": 15,
+    "event_ts": "2026-06-08T12:00:00Z",
+    "updated_at": "2026-06-08T12:05:00Z"
+  },
+  {
+    "entrega_id": "TRX-000002",
+    "pedido_id": 2,
+    "status": "entregue",
+    "previsao_entrega": "2026-06-08T14:00:00Z",
+    "ocorrencia": "entregue ao destinatário",
+    "valor_frete": 15,
+    "event_ts": "2026-06-08T14:00:00Z",
+    "updated_at": "2026-06-08T14:05:00Z"
+  }
+]

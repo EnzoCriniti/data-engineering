@@ -1,54 +1,48 @@
-# Runbook — Capítulo 07: orquestração com Airflow
+# Runbook — Capítulo 07
 
-> Guia rápido para **subir e usar**. Status atual: **ambiente base** — os DAGs reais ainda serão implementados (ver [GUIDE.md](./GUIDE.md) para o passo-a-passo e [SOLUTION.md](./SOLUTION.md) para o código).
+## O que este capítulo entrega
 
-## O que este capítulo entrega hoje
-
-O Airflow em modo `standalone`, pronto para receber DAGs.
+Um DAG Airflow com LocalExecutor e Postgres de metadados. Ele executa simulação, carga OLTP, carga API, `dbt build` e consulta de SLA em sequência. A carga compartilha o lock do DuckDB com os jobs manuais.
 
 ## Pré-requisitos
 
-- Docker e Docker Compose.
-- Porta `8080` livre (Airflow). Para o BI, a porta definida no `.env`.
+Docker com Compose v2.20 ou posterior. Os comandos partem da pasta do capítulo e usam credenciais de estudo. O Compose inclui o ambiente cumulativo com volumes próprios do projeto.
 
-## Subir o Airflow
+## Subir e usar
 
-```bash
-cp .env.example .env
-docker compose up -d airflow
+```sh
+docker compose --env-file .env.example up -d --build --wait oltp warehouse
+docker compose --env-file .env.example run --rm --build seeder
+docker compose --env-file .env.example up -d --build --wait airflow-scheduler
+docker compose --env-file .env.example exec airflow-scheduler airflow dags list
+docker compose --env-file .env.example run --rm airflow-ativar
+docker compose --env-file .env.example exec airflow-scheduler airflow dags trigger nuvemstore_daily
+docker compose --env-file .env.example exec airflow-scheduler airflow dags list-runs -d nuvemstore_daily
 ```
 
-UI: `http://localhost:8080`. No modo standalone, a senha inicial aparece nos logs:
+O DAG é criado pausado. Ative depois de popular o OLTP. O agendamento é às 06:00 UTC. Para rodar manualmente sem gerar um lote de pedidos, use `airflow dags trigger nuvemstore_daily --conf '{"somente_reprocessar":true}'`.
 
-```bash
-docker compose logs airflow | grep -i password
+## Validar e recuperar
+
+Confira a execução `success` em `airflow dags list-runs -d nuvemstore_daily`. O job abaixo mostra contagens por situação e as entregas em atraso aberto.
+
+```sh
+docker compose --env-file .env.example run --rm --build sla
 ```
 
-## BI opcional
+Se a API falhar, a tarefa `carga_api` pode retentar duas vezes depois das tentativas HTTP. Os logs ficam no volume `airflow-logs`. A transformação só inicia após a carga bem-sucedida. Para reparar um intervalo já encerrado, escolha os limites a partir das 06:00 UTC. Este exemplo seleciona o intervalo `[2026-06-08 06:00, 2026-06-09 06:00)`.
 
-```bash
-docker compose --profile bi up -d metabase
+```sh
+docker compose --env-file .env.example exec airflow-scheduler airflow dags backfill \
+  nuvemstore_daily --start-date 2026-06-08T06:00:00Z --end-date 2026-06-08T06:00:00Z --yes
 ```
 
-## Quando os DAGs estiverem implementados
-
-```bash
-# colocar os DAGs em airflow/dags/ (já montado no container)
-docker compose exec airflow airflow dags list
-docker compose exec airflow airflow dags trigger nuvemstore_daily
-# backfill de um intervalo
-docker compose exec airflow airflow dags backfill nuvemstore_daily -s 2024-01-01 -e 2024-01-07
-```
-
-**Validação:** uma execução orquestrada deve produzir os mesmos marts que a execução manual dos capítulos anteriores.
+O backfill carrega as versões que a API ainda expõe e recompõe o mart corrente. Ele não cria pedidos históricos. Para demonstrar retry e equivalência entre CLI e DAG, rode `bash shared/entregas/airflow-e2e.sh` da raiz em um ambiente Docker descartável. O teste cria um projeto separado, interrompe a API, observa `up_for_retry`, recupera a tarefa e compara o estado depois do backfill.
 
 ## Recomeçar do zero
 
-```bash
-docker compose down -v
-docker compose up -d airflow
-```
+Use `docker compose --env-file .env.example down --volumes` somente no projeto descartável de estudo. No NAS, o redeploy deve preservar os volumes.
 
 ## Próximo passo
 
-[Capítulo 08](../08-data-lake-com-spark): Data Lake com Spark para volume e dados semi-estruturados.
+O [diário da fase](../docs/diario/fase-2-entregas.md) registra evidências e os passos do aceite no Agent Platform.

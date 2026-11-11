@@ -18,7 +18,7 @@ A primeira entrega já foi executada com **1.200 pedidos sintéticos**. O ELT co
 
 ### 2. Entregas com múltiplas fontes
 
-**Planejada.** A loja terceiriza parte das entregas. Logística precisa cruzar as ocorrências da transportadora com os pedidos para acompanhar atrasos. A entrega prevista é um indicador de SLA calculado com dbt a partir de uma carga que pode ser reexecutada. [Guias de transformação e ingestão](./docs/indice-tecnico.md#2-entregas-com-múltiplas-fontes)
+**Em validação.** A loja terceiriza parte das entregas. Logística cruza as ocorrências da transportadora com os pedidos e consulta os atrasos abertos. A carga incremental é reexecutável e o Airflow permite retentar a tarefa com falha ou reparar uma janela. [Demonstração e evidências](./docs/diario/fase-2-entregas.md) [Guias de transformação e ingestão](./docs/indice-tecnico.md#2-entregas-com-múltiplas-fontes)
 
 ### 3. Histórico de navegação
 

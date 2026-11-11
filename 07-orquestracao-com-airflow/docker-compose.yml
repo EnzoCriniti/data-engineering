@@ -1,0 +1,2 @@
+include:
+  - ../deploy/nas/docker-compose.yml

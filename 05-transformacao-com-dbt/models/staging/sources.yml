@@ -1,0 +1,18 @@
+version: 2
+sources:
+  - name: raw
+    schema: main
+    tables:
+      - name: raw_pedido
+      - name: raw_item_pedido
+      - name: raw_produto
+      - name: raw_categoria
+  - name: transportadora
+    schema: staging
+    tables:
+      - name: transportadora_entregas
+        columns:
+          - name: entrega_id
+            data_tests: [unique, not_null]
+          - name: updated_at
+            data_tests: [not_null]

@@ -19,7 +19,7 @@ A NuvemStore agora tem múltiplas fontes: o OLTP de pedidos, a API da transporta
 
 ## Status desta etapa
 
-**Ambiente base.** O compose sobe o Airflow em modo `standalone` para estudo. Os DAGs reais são o próximo passo de implementação.
+**Em validação.** O Compose usa LocalExecutor e Postgres de metadados. O DAG roda os jobs da fundação, da transportadora e do dbt.
 
 ## Conceitos
 
@@ -33,7 +33,7 @@ A NuvemStore agora tem múltiplas fontes: o OLTP de pedidos, a API da transporta
 
 ## Como executar
 
-Este README descreve o *porquê*. Para subir o Airflow e o BI opcional veja o **[RUNBOOK.md](./RUNBOOK.md)**.
+Este README descreve o *porquê*. Para subir o Airflow e conferir o SLA, veja o **[RUNBOOK.md](./RUNBOOK.md)**.
 
 ## A dor que sobra
 
