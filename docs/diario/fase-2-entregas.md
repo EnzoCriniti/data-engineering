@@ -14,7 +14,7 @@ A NuvemStore terceirizou parte das entregas. Logística precisava localizar as r
 | --- | --- |
 | Desktop via SSH, Python 3.11 e DuckDB 1.1.0 | 9 entregas em páginas de duas. `401`, `429` e falha na segunda página exercitados. Reexecução sem alteração, conflito de versões detectado e checkpoint preservado após falha e backfill. |
 | dbt 1.9.4 | Dois builds com 8 modelos e 15 testes aprovados cada. Na primeira consulta, TRX-0 estava 7.200 s em atraso. Após a atualização para entregue, restaram zero atrasos abertos. |
-| Agent Platform `47af4ba` | Manifesto e overlay aceitos sem avisos. Consulte a seção de aceite abaixo para medir o pico real no NAS. |
+| Agent Platform `47af4ba` | Manifesto e overlay aceitos sem avisos. O validador calculou limites de 3.168 MiB em staging e 3.840 MiB em produção, incluindo o maior job. O pico real será medido no NAS. |
 
 ## Aceite no NAS
 

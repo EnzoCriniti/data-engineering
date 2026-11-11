@@ -68,7 +68,7 @@ Regras do compose do NAS (além do [padrão geral](./padrao-do-repositorio.md#do
 - volumes nomeados sem `name:` fixo ou `external`. Para persistir dados em bind, usar um caminho sob `${AP_DATA_DIR}`, injetado pela plataforma por ambiente;
 - sem `container_name`, `ports`, `network_mode: host`, `privileged` ou `docker.sock`: a plataforma recusa o deploy;
 - Postgres e demais serviços com estado sem rota pública;
-- o agendador Python executa o lote no próprio container às 06:00 UTC (03:00 em São Paulo). Em caso de erro, tenta novamente a cada minuto no mesmo dia UTC. Os jobs manuais ficam no perfil `jobs`;
+- o agendador Python da fundação executava às 06:00 UTC (03:00 em São Paulo). O Compose de entregas transfere esse horário para o DAG Airflow. Os jobs manuais usam o perfil `jobs`. [Aceite da fase de entregas](./diario/fase-2-entregas.md#aceite-no-nas);
 - serviços que viram legado na história (ex.: o warehouse Postgres depois do lakehouse) são desligados numa etapa explícita, com a migração validada antes.
 
 ### Origem do código

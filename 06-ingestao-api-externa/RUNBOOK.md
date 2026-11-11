@@ -25,6 +25,15 @@ docker compose --env-file .env.example run --rm dbt report
 
 A resposta HTTP tem `next_cursor` na primeira página. A primeira carga grava duas entregas de exemplo. A segunda deve gravar zero. O relatório lista o `pedido_id` associado e os segundos de atraso das entregas abertas. A fixture HTTP simples ilustra a paginação. A prova completa abaixo gera os IDs dos cenários a partir do OLTP quando recebe `OLTP_URL`.
 
+A consulta usada para responder à pergunta de Logística é:
+
+```sql
+select entrega_id, pedido_id, previsao_entrega, atraso_segundos
+from analytics_dbt.mart_sla_entregas
+where situacao_sla = 'atraso_aberto'
+order by atraso_segundos desc, entrega_id;
+```
+
 Na raiz do repositório, em um ambiente Python isolado:
 
 ```sh
